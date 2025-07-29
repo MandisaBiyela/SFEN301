@@ -1,0 +1,19 @@
+# Ignore virtual environments
+venv/
+.env/
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore SQLite DB (optional if you want it tracked)
+*.db
+
+# Ignore compiled OpenCV output
+*.jpg
+*.png
+*.mp4
