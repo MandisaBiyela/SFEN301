@@ -4,11 +4,11 @@ import sqlite3
 from datetime import datetime
 from deepface import DeepFace
 
-# Connect to the SQLite database
+# Connect to DB
 conn = sqlite3.connect("database.db")
 cursor = conn.cursor()
 
-# Create attendance table if not exists
+# Attendance table (if not exists)
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS attendance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,41 +18,47 @@ CREATE TABLE IF NOT EXISTS attendance (
     status TEXT
 )
 """)
-
 conn.commit()
 
-# Load all registered users and face paths
-cursor.execute("SELECT id, name, image_path FROM users")
-users = cursor.fetchall()
-
-if not users:
-    print("❌ No registered users found. Run register.py first.")
-    exit()
-
-print("[INFO] Starting webcam and face recognition...")
-
-cap = cv2.VideoCapture(0)
+# Keep track of already-recognized users for today
 recognized_today = set()
+
+# Start webcam
+cap = cv2.VideoCapture(0)
+print("[INFO] Starting live attendance system...")
 
 while True:
     ret, frame = cap.read()
     if not ret:
+        print("⚠️ Webcam not available")
         break
 
-    try:
-        # Save a temporary image of the current frame
-        cv2.imwrite("temp.jpg", frame)
+    # Save current frame temporarily
+    cv2.imwrite("temp.jpg", frame)
 
-        # Compare against each registered user
-        for user_id, name, image_path in users:
-            result = DeepFace.verify(img1_path=image_path, img2_path="temp.jpg",model_name='Facenet512',distance_metric='cosine', enforce_detection=True)
-            print(result)
+    # 🔄 Re-fetch latest registered users from database in case new users are added
+    cursor.execute("SELECT id, name, image_path FROM users")
+    users = cursor.fetchall()
 
-            if result["verified"] and name not in recognized_today:
+    for user_id, name, image_path in users:
+        if name in recognized_today:
+            continue  # Skip if already marked today
+
+        try:
+            result = DeepFace.verify(
+                img1_path=image_path,
+                img2_path="temp.jpg",
+                model_name='Facenet512',
+                distance_metric='cosine',
+                detector_backend='retinaface',  # more accurate than opencv
+                enforce_detection=True
+            )
+
+            if result["verified"]:
                 now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print(f"✅ {name} recognized at {now}")
 
-                # Record attendance
+                # Save attendance
                 cursor.execute("""
                     INSERT INTO attendance (user_id, name, time, status)
                     VALUES (?, ?, ?, ?)
@@ -61,14 +67,14 @@ while True:
 
                 recognized_today.add(name)
 
-                # Display name on screen
+                # Show name on webcam feed
                 cv2.putText(frame, f"{name} - Present", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
-                break
+                break  # Don't keep looping users if one match is found
 
-    except Exception as e:
-        print(f"Error: {e}")
+        except Exception as e:
+            print(f"[ERROR] {name}'s image failed: {e}")
 
-    # Show the webcam feed
+    # Show the current webcam feed
     cv2.imshow("Attendance System", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
