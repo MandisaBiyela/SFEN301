@@ -1,62 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="static/css/admin_dashboard.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="static/css/admin_dashboard.css" />
 </head>
 <body>
-    <header class="main-header">
-        <div class="header-left">
-            <img src="https://www.dut.ac.za/wp-content/uploads/2014/12/dut.png" alt="DUT Logo" class="dut-logo">
-        </div>
-        <div class="header-right">
-            <button class="profile-btn">Profile</button>
-            <button class="logout-btn">Logout</button>
-        </div>
-    </header>
+  <header class="main-header">
+    <div class="header-left">
+      <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo" />
+    </div>
+    <div class="header-right">
+      <button class="profile-btn">Profile</button>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
 
-    <main class="dashboard-content">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">ADMIN DASHBOARD</h1>
-            <p class="dashboard-subtitle">Welcome System Admin</p>
-        </div>
-        
-        <div class="dashboard-cards-container">
-            <a href="lecturer-management.html" class="dashboard-card">
-                <img src="https://i.imgur.com/uqDgG9B.png" alt="Lecturers Icon" class="card-image-icon">
-                <h3 class="card-title"> Lecturers</h3>
-            </a>
-            <a href="module-management.html" class="dashboard-card">
-                <img src="https://i.imgur.com/spgf0MH.png" alt="Modules Icon" class="card-image-icon">
-                <h3 class="card-title"> Modules</h3>
-            </a>
-            <a href="student-management.html" class="dashboard-card">
-                <img src="https://i.imgur.com/P1aTI6G.png" alt="Students Icon" class="card-image-icon">
-                <h3 class="card-title"> Students</h3>
-            </a>
-            <a href="venue-management.html" class="dashboard-card">
-                <img src="https://i.imgur.com/3U5uhCH.png" alt="Venues Icon" class="card-image-icon">
-                <h3 class="card-title"> Venues</h3>
-            </a>
-            <a href="class-period-management.html" class="dashboard-card">
-                <img src="https://i.imgur.com/gcSY4Bz.png" alt="Class Periods Icon" class="card-image-icon">
-                <h3 class="card-title">Module Periods</h3>
-            </a>
-            <a href="class-register-management.html" class="dashboard-card">
-                <img src="https://i.imgur.com/UrBHU8f.png" alt="Class Registers Icon" class="card-image-icon">
-                <h3 class="card-title">Module Registers</h3>
-            </a>
-            <a href="view-attendance.html" class="dashboard-card">
-                <img src="https://i.imgur.com/CWkKExt.png" alt="Attendance Icon" class="card-image-icon">
-                <h3 class="card-title">View Attendance</h3>
-            </a>
-        </div>
-    </main>
+  <main class="dashboard-content">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">ADMIN DASHBOARD</h1>
+      <p class="dashboard-subtitle">Welcome System Admin</p>
+    </div>
 
-    <footer>
-        <p>&copy; CyberRogues Attendance System</p>
-    </footer>
+    <div class="dashboard-cards-container">
+      <a href="lecturer.html" class="dashboard-card">
+        <img src="static/images/Lecturer.png" alt="Lecturers Icon" class="card-image-icon" />
+        <h3 class="card-title"> Lecturers</h3>
+      </a>
+      <a href="module-management.html" class="dashboard-card">
+        <img src="static/images/Book.png" alt="Modules Icon" class="card-image-icon" />
+        <h3 class="card-title"> Modules</h3>
+      </a>
+      <a href="student-management.html" class="dashboard-card">
+        <img src="static/images/Student.png" alt="Students Icon" class="card-image-icon" />
+        <h3 class="card-title"> Students</h3>
+      </a>
+      <a href="venue-management.html" class="dashboard-card">
+        <img src="static/images/Venue.png" alt="Venues Icon" class="card-image-icon" />
+        <h3 class="card-title"> Venues</h3>
+      </a>
+      <a href="class-period-management.html" class="dashboard-card">
+        <img src="static/images/ModulePeriod.png" alt="Class Periods Icon" class="card-image-icon" />
+        <h3 class="card-title">Module Periods</h3>
+      </a>
+      <a href="class-register-management.html" class="dashboard-card">
+        <img src="static/images/Register.png" alt="Class Registers Icon" class="card-image-icon" />
+        <h3 class="card-title">Module Registers</h3>
+      </a>
+      <a href="view-attendance.html" class="dashboard-card">
+        <img src="static/images/ViewAttendance.png" alt="Attendance Icon" class="card-image-icon" />
+        <h3 class="card-title">View Attendance</h3>
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; CyberRogues Attendance System</p>
+  </footer>
+
+  <script src="static/js/admin_dashboard.js"></script>
 </body>
 </html>

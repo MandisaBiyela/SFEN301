@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lecturer Management</title>
+    <link rel="stylesheet" href="static/css/lecturer.css" />
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo" />
+            </a>
+        </div>
+        <div class="header-right">
+            <button id="profile-btn" class="profile-btn">Profile</button>
+            <button id="logout-btn" class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <button type="button" id="back-button" class="back-btn" aria-label="Back">
+            <img src="static/images/Back.png" alt="Back icon" class="back-icon" />
+        </button>
+    </div>
+
+    <div id="status-message-container" class="status-message-container" style="display: none;">
+        <p id="status-message" class="status-message">Changes saved.</p>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">LECTURER MANAGEMENT</h1>
+            <p class="dashboard-subtitle">Manage All Lecturers</p>
+        </div>
+
+        <section class="search-container">
+            <input
+                type="text"
+                id="lecturer-search-input"
+                class="search-input"
+                placeholder="Search by Number, Surname..."
+                aria-label="Search lecturers"
+            />
+        </section>
+
+        <section class="add-new-container">
+            <a href="lecturer_add.html" class="add-new-btn">Add New Lecturer</a>
+        </section>
+
+        <section class="table-container">
+            <table class="data-table" aria-label="Lecturer Table">
+                <thead>
+                    <tr>
+                        <th>Lecturer Number</th>
+                        <th>Name</th>
+                        <th>Surname</th>
+                        <th>Email</th>
+                        <th>Modules Taught</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="lecturer-table-body"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/lecturer.js"></script>
+</body>
+</html>

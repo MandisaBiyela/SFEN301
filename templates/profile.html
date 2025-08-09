@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Profile</title>
+  <link rel="stylesheet" href="static/css/profile.css" />
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-left">
+      <a href="templates/admin_dashboard.html">
+        <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo" />
+      </a>
+    </div>
+    <div class="header-right">
+      <button class="logout-btn" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <div class="back-button-container">
+    <button type="button" class="back-btn" id="back-button" aria-label="Back to Login">
+      <img src="static/images/Back.png" alt="Back icon" class="back-icon" />
+    </button>
+  </div>
+
+  <main class="dashboard-content">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">PROFILE</h1>
+      <p class="dashboard-subtitle">Administrator details</p>
+    </div>
+
+    <section class="profile-card">
+      <div class="profile-detail">
+        <span class="detail-label">Name:</span>
+        <span class="detail-value">CyberRogues System Admin User</span>
+      </div>
+      <div class="profile-detail">
+        <span class="detail-label">Email:</span>
+        <span class="detail-value">admin@dut.ac.za</span>
+      </div>
+      <div class="profile-detail">
+        <span class="detail-label">Role:</span>
+        <span class="detail-value">Administrator</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; CyberRogues Attendance System</p>
+  </footer>
+
+  <script src="static/js/profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Add New Lecturer</title>
+    <link rel="stylesheet" href="static/css/lecturer.css" />
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo" />
+            </a>
+        </div>
+        <div class="header-right">
+            <button id="profile-btn" class="profile-btn">Profile</button>
+            <button id="logout-btn" class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <button type="button" id="back-button" class="back-btn" aria-label="Back to Lecturer Management">
+            <img src="static/images/Back.png" alt="Back icon" class="back-icon" />
+        </button>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">ADD NEW LECTURER</h1>
+            <p class="dashboard-subtitle">Create a new lecturer profile</p>
+        </div>
+
+        <section class="form-container">
+            <form id="add-lecturer-form">
+                <div class="form-group">
+                    <label for="lecturer-number">Lecturer Number</label>
+                    <input
+                        type="text"
+                        id="lecturer-number"
+                        name="lecturer-number"
+                        placeholder="e.g., 001"
+                        required
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="lecturer-name">Name</label>
+                    <input
+                        type="text"
+                        id="lecturer-name"
+                        name="lecturer-name"
+                        placeholder="e.g., Jane"
+                        required
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="lecturer-surname">Surname</label>
+                    <input
+                        type="text"
+                        id="lecturer-surname"
+                        name="lecturer-surname"
+                        placeholder="e.g., Doe"
+                        required
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="lecturer-email">Email</label>
+                    <input
+                        type="email"
+                        id="lecturer-email"
+                        name="lecturer-email"
+                        placeholder="e.g., jane.doe@dut.ac.za"
+                        required
+                    />
+                </div>
+                <button type="submit" class="submit-btn">Add Lecturer</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/lecturer.js"></script>
+</body>
+</html>
