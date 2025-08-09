@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login - Attendance Management System</title>
+    <link rel="stylesheet" href="static/css/login.css" />
+</head>
+<body>
+    <header class="main-header">
+        <img src="https://www.dut.ac.za/wp-content/uploads/2014/12/dut.png" alt="DUT Logo" class="dut-logo" />
+    </header>
+
+    <div class="login-container">
+        <div class="login-box">
+            <h1 class="login-title">Attendance Portal</h1>
+            <div class="form-toggle">
+                <button id="adminTab" class="active">Admin</button>
+                <button id="lecturerTab">Lecturer</button>
+            </div>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username" id="username-label">Admin ID</label>
+                    <input type="text" id="username" placeholder="Enter Admin ID Number" required />
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required />
+                </div>
+                <div class="forgot-password-container">
+                    <a href="forgot_password.html" id="forgot-password-link" class="forgot-password">Forgot Password?</a>
+                </div>
+                <button type="submit" class="auth-button">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System.</p>
+    </footer>
+
+    <script src="static/js/login.js"></script>
+</body>
+</html>
