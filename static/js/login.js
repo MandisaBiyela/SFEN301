@@ -58,14 +58,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (userType === 'admin') {
                 if (username === adminCredentials.username && password === adminCredentials.password) {
                     alert('Admin login successful!');
-                    window.location.href = 'admin-dashboard.html';
+                    window.location.href = 'admin_dashboard.html';
                 } else {
                     alert('Invalid Admin ID or password.');
                 }
             } else if (userType === 'lecturer') {
                 if (username === lecturerCredentials.username && password === lecturerCredentials.password) {
                     alert('Lecturer login successful!');
-                    window.location.href = 'lecturer-dashboard.html';
+                    window.location.href = 'lecturer_dashboard.html';
                 } else {
                     alert('Invalid Lecturer ID or password.');
                 }

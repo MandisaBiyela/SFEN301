@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <link rel="stylesheet" href="static/css/student.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <a href="admin_dashboard.html" class="back-btn" id="back-button">
+            <img src="{{ url_for('static', filename='images/Back.png') }}" alt="Back" class="back-icon">
+        </a>
+    </div>
+
+    <main class="dashboard-content">
+        <div id="status-message-container" class="status-message-container"></div>
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">STUDENT MANAGEMENT</h1>
+            <p class="dashboard-subtitle">Manage all students</p>
+        </div>
+
+        <section class="status-message-container" id="status-message"></section>
+
+        <section class="search-container">
+            <input type="text" id="student-search-input" class="search-input" placeholder="Search by Student Number, Name, Surname...">
+        </section>
+
+        <section class="centered-btn-container">
+            <a href="student_add.html" class="add-new-btn">Add New Student</a>
+        </section>
+
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student Number</th>
+                        <th>Name</th>
+                        <th>Surname</th>
+                        <th>Face ID</th>
+                        <th>Modules</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/student.js"></script>
+</body>
+</html>

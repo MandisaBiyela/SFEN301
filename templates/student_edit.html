@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Student</title>
+    <link rel="stylesheet" href="static/css/student.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin-dashboard.html">
+                <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <a href="student.html" class="back-btn" id="back-button">
+            <img src="{{ url_for('static', filename='images/Back.png') }}" alt="Back" class="back-icon">
+        </a>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">EDIT STUDENT</h1>
+            <p class="dashboard-subtitle">Update the details of an existing student</p>
+        </div>
+        
+        <section class="form-container">
+            <form action="#" method="post" id="edit-student-form">
+                <div class="form-group">
+                    <label for="student-number">Student Number</label>
+                    <input type="text" id="student-number" name="student-number" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="student-name">Student Name</label>
+                    <input type="text" id="student-name" name="student-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="student-surname">Student Surname</label>
+                    <input type="text" id="student-surname" name="student-surname" required>
+                </div>
+                <div class="form-group">
+                    <label>Modules</label>
+                    <input type="text" id="module-search" class="module-search-input" placeholder="Search for modules...">
+                    <div class="module-selection-box">
+                    </div>
+                </div>
+                
+                <hr class="form-divider">
+                <h3 class="face-id-title">Edit Face ID</h3>
+                
+                <div class="face-id-container">
+                    <div class="camera-box" id="camera-box">
+                        <video id="webcam" autoplay playsinline></video>
+                        <div class="camera-overlay" id="camera-overlay">
+                            <span class="plus-icon">+</span>
+                        </div>
+                    </div>
+                    <div class="face-id-buttons" id="face-id-buttons">
+                        </div>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" class="submit-btn">Save Changes</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/student.js"></script>
+</body>
+</html>

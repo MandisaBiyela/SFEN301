@@ -63,6 +63,23 @@ def module_edit():
 def module_add():
     return render_template('module_add.html')
 
+@app.route('/student.html')
+def student():
+    return render_template('student.html')
+
+@app.route('/student_add.html')
+def student_add():
+    return render_template('student_add.html')
+
+@app.route('/student_edit.html')
+def student_edit():
+    return render_template('student_edit.html')
+
+
+
+
+
+
 
 
 

@@ -32,7 +32,7 @@
         <img src="{{ url_for('static', filename='images/Book.png') }}" alt="Modules Icon" class="card-image-icon" />
         <h3 class="card-title"> Modules</h3>
       </a>
-      <a href="student-management.html" class="dashboard-card">
+      <a href="{{ url_for('student') }}" class="dashboard-card">
         <img src="{{ url_for('static', filename='images/Student.png') }}" alt="Students Icon" class="card-image-icon" />
         <h3 class="card-title"> Students</h3>
       </a>
