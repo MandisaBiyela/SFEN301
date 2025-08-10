@@ -75,6 +75,37 @@ def student_add():
 def student_edit():
     return render_template('student_edit.html')
 
+@app.route('/venue.html')
+def venue():
+    return render_template('venue.html')
+
+@app.route('/venue_add.html')
+def venue_add():
+    return render_template('venue_add.html')
+
+@app.route('/venue_edit.html')
+def venue_edit():
+    return render_template('venue_edit.html')
+
+@app.route('/period.html')
+def period():
+    return render_template('period.html')
+
+@app.route('/period_edit.html')
+def period_edit():
+    return render_template('period_edit.html')
+
+@app.route('/register.html')
+def register():
+    return render_template('register.html')
+
+@app.route('/register_student.html')
+def register_student():
+    return render_template('register_student.html')
+
+@app.route('/attendance.html')
+def attendance():
+    return render_template('attendance.html')
 
 
 

@@ -1,0 +1,214 @@
+/* ===============================
+   Global & Dashboard Styles
+=============================== */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #161f35;
+    color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #13192a;
+    padding: 10px 20px;
+    box-shadow: 0 4px 3px rgba(0,0,0,0.2);
+}
+
+.dut-logo {
+    height: 40px;
+    vertical-align: middle;
+}
+
+.header-right {
+    display: flex;
+    gap: 25px;
+}
+
+.profile-btn, .logout-btn {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+.logout-btn {
+    background-color: #3ca087;
+    border-radius: 5px;
+}
+
+.dashboard-content {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.dashboard-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.dashboard-title {
+    color: white;
+    font-size: 2em;
+    margin: 0;
+}
+
+.dashboard-subtitle,
+#module-code-display {
+    color: #3ca087;
+    font-size: 1.1em;
+    margin: 5px 0 0;
+    font-weight: bold;
+}
+
+footer {
+    background-color: #13192a;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    box-shadow: 0 -4px 3px rgba(0,0,0,0.2);
+}
+
+/* ===============================
+   Search Inputs & Containers
+=============================== */
+
+.search-input {
+    width: 250px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #555;
+    background-color: #13192a;
+    color: white;
+    font-size: 1em;
+    border-radius: 5px;
+    margin-right: 10px;
+}
+
+/* ===============================
+   Tables
+=============================== */
+
+.table-container {
+    background-color: #34495e;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.data-table th, .data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #555;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: #13192a;
+    font-weight: bold;
+    color: white;
+}
+
+.data-table thead th:first-child {
+    border-top-left-radius: 15px;
+}
+
+.data-table thead th:last-child {
+    border-top-right-radius: 15px;
+}
+
+.data-table tr:hover {
+    background-color: #253443;
+    cursor: pointer;
+}
+
+/* ===============================
+   Buttons & Controls
+=============================== */
+
+.back-button-container {
+    margin-bottom: 20px;
+    margin-left: 10px;
+}
+
+.back-btn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+}
+
+.back-icon {
+    width: 30px;
+    height: 30px;
+}
+
+.status-message-container {
+    background-color: #3ca087;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    border-radius: 5px;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+#status-message {
+    margin: 0;
+}
+
+#print-register-btn {
+    padding: 6px 12px;
+    font-size: 0.8em;
+    background-color: grey;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#print-register-btn:hover {
+    background-color: #2b7d62;
+    transform: scale(1.05);
+}
+
+.page-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px;
+}
+
+.student-register-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto 20px;
+}
+
+.student-register-controls .search-input {
+    flex: 1;
+    margin-right: 15px;
+}

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venue Management</title>
+    <link rel="stylesheet" href="static/css/venue.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <a href="admin_dashboard.html" class="back-btn" id="back-button">
+            <img src="static/images/Back.png" alt="Back" class="back-icon">
+        </a>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">VENUE MANAGEMENT</h1>
+            <p class="dashboard-subtitle">Manage all venues </p>
+        </div>
+        
+        <div id="status-message-container"></div>
+
+        <section class="search-container">
+            <input type="text" id="venue-search-input" class="search-input" placeholder="Search by Venue, Block..">
+        </section>
+
+        <section class="centered-btn-container">
+            <a href="venue_add.html" class="add-new-btn">Add New Venue</a>
+        </section>
+
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Venue Name</th>
+                        <th>Block</th>
+                        <th>Campus</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="venue-table-body">
+                    </tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/venue.js"></script>
+</body>
+</html>

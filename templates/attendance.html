@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - View Attendance</title>
+    <link rel="stylesheet" href="static/css/attendance.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="dashboard-content">
+        <div class="back-button-container">
+            <a href="admin_dashboard.html" class="back-btn" id="back-button">
+                <img src="static/images/Back.png" alt="Back" class="back-icon">
+            </a>
+        </div>
+
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">View Attendance</h1>
+            <p class="dashboard-subtitle">Manage and track student attendance</p>
+        </div>
+
+        <div class="attendance-filters">
+            <div class="form-group">
+                <label for="module-select">Module Name</label>
+                <select id="module-select">
+                    </select>
+            </div>
+            <div class="date-filters">
+                <div class="form-group">
+                    <label for="specific-date">Specific Date</label>
+                    <input type="date" id="specific-date" class="date-input">
+                </div>
+                <div class="form-group">
+                    <label for="period-select">Period Time</label>
+                    <select id="period-select">
+                        </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="attendance-stats">
+            <div class="stats-card">
+                <p>Total Students</p>
+                <span id="total-students">0</span>
+            </div>
+            <div class="stats-card">
+                <p>Present (This Period)</p>
+                <span id="total-present">0</span>
+            </div>
+            <div class="stats-card">
+                <p>Period Attendance Rate</p>
+                <span id="period-rate">0%</span>
+            </div>
+            <div class="stats-card">
+                <p>Module Attendance Rate</p>
+                <span id="module-rate">0%</span>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="student-search" class="search-input" placeholder="Search by student number or name...">
+            <button class="action-btn" id="print-attendance-btn">Print Attendance</button>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student No.</th>
+                        <th>Student Name</th>
+                        <th>Present</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy;  CyberRogues Attendance System</p>
+    </footer>
+
+    <div id="student-stats-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modal-student-name"></h2>
+            <h3 id="modal-module-name"></h3>
+            <div id="modal-stats-text">
+                </div>
+        </div>
+    </div>
+
+    <script src="static/js/attendance.js"></script>
+</body>
+</html>

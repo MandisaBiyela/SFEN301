@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Module Period</title>
+    <link rel="stylesheet" href="static/css/period.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <button class="back-btn" id="back-button">
+            <img src="static/images/Back.png" alt="Back" class="back-icon">
+        </button>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">EDIT MODULE PERIOD</h1>
+            <p class="dashboard-subtitle">Modify the details of a class period</p>
+        </div>
+
+        <section class="form-container">
+            <form action="#" method="post" id="edit-period-form">
+                <div class="form-group">
+                    <label for="module-code">Module Code</label>
+                    <input type="text" id="module-code" name="module-code" value="PRG301" class="unchangeable-field" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="module-name">Module Name</label>
+                    <input type="text" id="module-name" name="module-name" value="Advanced Programming" class="unchangeable-field" readonly>
+                </div>
+                
+                <hr class="form-divider">
+
+                <div id="periods-container">
+                    <div class="period-entry" id="period-entry-1">
+                        <div class="period-header">
+                            <h3 class="period-title">Period 1</h3>
+                        </div>
+                        <div class="form-group">
+                            <label for="day-1">Day</label>
+                            <select id="day-1" name="day-1" class="period-day-select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="time-start-1">Start Time</label>
+                            <input type="time" id="time-start-1" name="time-start-1" value="10:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="time-end-1">End Time</label>
+                            <input type="time" id="time-end-1" name="time-end-1" value="11:45">
+                        </div>
+                        <div class="form-group">
+                            <label for="venue-1">Venue</label>
+                            <select id="venue-1" name="venue-1" class="period-venue-select"></select>
+                        </div>
+                    </div>
+                    
+                    <div class="add-period-btn-container">
+                        <button type="button" id="add-period-btn" class="add-period-btn">Add Period</button>
+                    </div>
+                </div>
+
+                <div class="form-buttons centered-buttons">
+                    <button type="submit" class="submit-btn">Save Changes</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/period.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Registers</title>
+    <link rel="stylesheet" href="static/css/register.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <button class="back-btn" id="back-button">
+            <img src="static/images/Back.png" alt="Back" class="back-icon">
+        </button>
+    </div>
+
+    <div id="status-message-container" class="status-message-container" style="display: none;">
+        <p id="status-message" class="status-message">Changes saved.</p>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">MODULE REGISTERS</h1>
+            <p class="dashboard-subtitle">Select a module to view its student register</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="module-search-input" class="search-input" placeholder="Search for modules...">
+        </div>
+
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Module Code</th>
+                        <th>Module Name</th>
+                    </tr>
+                </thead>
+                <tbody id="module-table-body">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/register.js"></script>
+</body>
+</html>

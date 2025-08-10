@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Periods</title>
+    <link rel="stylesheet" href="static/css/period.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+    
+    <div class="back-button-container">
+        <button class="back-btn" id="back-button">
+            <img src="static/images/Back.png" alt="Back" class="back-icon">
+        </button>
+    </div>
+
+    <div id="status-message-container" class="status-message-container" style="display: none;">
+        <p id="status-message" class="status-message">Changes saved.</p>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">MODULE PERIODS</h1>
+            <p class="dashboard-subtitle">View and manage the schedule for each module</p>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="module-period-search-input" class="search-input" placeholder="Search for modules or periods...">
+        </div>
+
+        <section class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Module Code</th>
+                        <th>Module Name</th>
+                        <th>Periods</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="module-periods-table-body">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/period.js"></script>
+</body>
+</html>
