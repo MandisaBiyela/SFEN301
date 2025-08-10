@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Module</title>
+    <link rel="stylesheet" href="static/css/module.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <button type="button" class="back-btn" id="back-button">
+            <img src="{{ url_for('static', filename='images/Back.png') }}" alt="Back to Modules" class="back-icon">
+        </button>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">EDIT MODULE</h1>
+            <p class="dashboard-subtitle">Update the details below to edit a module</p>
+        </div>
+        
+        <div id="status-message-container" class="status-message-container"></div>
+        
+        <section class="form-container">
+            <form action="#" method="post" id="add-module-form">
+                <div class="form-group">
+                    <label for="module-code">Module Code</label>
+                    <input type="text" id="module-code" name="module-code" placeholder="eg. SFEN301" required>
+                </div>
+                <div class="form-group">
+                    <label for="module-name">Module Name</label>
+                    <input type="text" id="module-name" name="module-name" placeholder="eg. Software Engineering III" required>
+                </div>
+                <div class="form-group">
+                    <label for="lecturer">Lecturer</label>
+                    <select id="lecturer" name="lecturer" required>
+                        <option value="">Select a Lecturer</option>
+                        </select>
+                </div>
+                <button type="submit" class="submit-btn">Add Module</button>
+            </form>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/module.js"></script>
+</body>
+</html>

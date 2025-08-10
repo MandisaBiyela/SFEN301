@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Modules</title>
+    <link rel="stylesheet" href="static/css/module.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <a href="admin_dashboard.html">
+                <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <a href="admin-dashboard.html" class="back-btn" id="back-button">
+            <img src="{{ url_for('static', filename='images/Back.png') }}" alt="Back" class="back-icon">
+        </a>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">MODULE MANAGEMENT</h1>
+            <p class="dashboard-subtitle">View and manage modules</p>
+        </div>
+        
+        <div id="status-message-container" class="status-message-container"></div>
+        
+        <section class="search-container">
+            <input type="text" id="module-search-input" placeholder="Search for modules..." class="search-input">
+        </section>
+
+        <section class="module-list-section">
+            <h2 class="section-title">Existing Modules</h2>
+            <div class="centered-btn-container">
+                <a href="module_add.html" class="add-new-btn">Add New Module</a>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Module Code</th>
+                            <th>Module Name</th>
+                            <th>Lecturer</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="module-list">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/module.js"></script>
+</body>
+</html>

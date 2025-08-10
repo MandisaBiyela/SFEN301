@@ -51,6 +51,19 @@ def lecturer_add():
 def lecturer_edit():
     return render_template('lecturer_edit.html')
 
+@app.route('/module.html')
+def module():
+    return render_template('module.html')
+
+@app.route('/module_edit.html')
+def module_edit():
+    return render_template('module_edit.html')
+
+@app.route('/module_add.html')
+def module_add():
+    return render_template('module_add.html')
+
+
 
 
 
