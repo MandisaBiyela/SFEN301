@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>User Profile</title>
-  <link rel="stylesheet" href="static/css/profile.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
 </head>
 <body>
   <header class="main-header">
     <div class="header-left">
-      <a href="templates/admin_dashboard.html">
-        <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo" />
+      <a href="{{ url_for('admin_dashboard') }}">
+        <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo" />
       </a>
     </div>
     <div class="header-right">
@@ -20,7 +20,7 @@
 
   <div class="back-button-container">
     <button type="button" class="back-btn" id="back-button" aria-label="Back to Login">
-      <img src="static/images/Back.png" alt="Back icon" class="back-icon" />
+      <img src="{{ url_for('static', filename='images/Back.png') }}" alt="Back icon" class="back-icon" />
     </button>
   </div>
 
@@ -37,7 +37,7 @@
       </div>
       <div class="profile-detail">
         <span class="detail-label">Email:</span>
-        <span class="detail-value">admin@dut.ac.za</span>
+        <span class="detail-value">AttendanceAdmin@dut.ac.za</span>
       </div>
       <div class="profile-detail">
         <span class="detail-label">Role:</span>
@@ -50,6 +50,6 @@
     <p>&copy; CyberRogues Attendance System</p>
   </footer>
 
-  <script src="static/js/profile.js"></script>
+  <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 </body>
 </html>

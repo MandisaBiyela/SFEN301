@@ -26,6 +26,7 @@ def new_password():
 
 #Incase i want to check the Admin Dashboard as the first page
 @app.route('/')
+@app.route('/admin_dashboard.html')
 def admin_dashboard():
     return render_template('admin_dashboard.html')
 

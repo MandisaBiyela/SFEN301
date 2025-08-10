@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="static/css/admin_dashboard.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}" />
 </head>
 <body>
   <header class="main-header">
     <div class="header-left">
-      <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo" />
+      <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo" />
     </div>
     <div class="header-right">
       <button class="profile-btn">Profile</button>
@@ -24,32 +24,32 @@
     </div>
 
     <div class="dashboard-cards-container">
-      <a href="lecturer.html" class="dashboard-card">
-        <img src="static/images/Lecturer.png" alt="Lecturers Icon" class="card-image-icon" />
+      <a href="{{ url_for('lecturer') }}" class="dashboard-card">
+        <img src="{{ url_for('static', filename='images/Lecture.png') }}" alt="Lecturers Icon" class="card-image-icon" />
         <h3 class="card-title"> Lecturers</h3>
       </a>
       <a href="module-management.html" class="dashboard-card">
-        <img src="static/images/Book.png" alt="Modules Icon" class="card-image-icon" />
+        <img src="{{ url_for('static', filename='images/Book.png') }}" alt="Modules Icon" class="card-image-icon" />
         <h3 class="card-title"> Modules</h3>
       </a>
       <a href="student-management.html" class="dashboard-card">
-        <img src="static/images/Student.png" alt="Students Icon" class="card-image-icon" />
+        <img src="{{ url_for('static', filename='images/Student.png') }}" alt="Students Icon" class="card-image-icon" />
         <h3 class="card-title"> Students</h3>
       </a>
       <a href="venue-management.html" class="dashboard-card">
-        <img src="static/images/Venue.png" alt="Venues Icon" class="card-image-icon" />
+        <img src="{{ url_for('static', filename='images/Venue.png') }}" alt="Venues Icon" class="card-image-icon" />
         <h3 class="card-title"> Venues</h3>
       </a>
       <a href="class-period-management.html" class="dashboard-card">
-        <img src="static/images/ModulePeriod.png" alt="Class Periods Icon" class="card-image-icon" />
+        <img src="{{ url_for('static', filename='images/ModulePeriod.png') }}" alt="Class Periods Icon" class="card-image-icon" />
         <h3 class="card-title">Module Periods</h3>
       </a>
       <a href="class-register-management.html" class="dashboard-card">
-        <img src="static/images/Register.png" alt="Class Registers Icon" class="card-image-icon" />
+        <img src="{{ url_for('static', filename='images/Register.png') }}" alt="Class Registers Icon" class="card-image-icon" />
         <h3 class="card-title">Module Registers</h3>
       </a>
       <a href="view-attendance.html" class="dashboard-card">
-        <img src="static/images/ViewAttendance.png" alt="Attendance Icon" class="card-image-icon" />
+        <img src="{{ url_for('static', filename='images/ViewAttendance.png') }}" alt="Attendance Icon" class="card-image-icon" />
         <h3 class="card-title">View Attendance</h3>
       </a>
     </div>
@@ -59,6 +59,6 @@
     <p>&copy; CyberRogues Attendance System</p>
   </footer>
 
-  <script src="static/js/admin_dashboard.js"></script>
+  <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
 </body>
 </html>
