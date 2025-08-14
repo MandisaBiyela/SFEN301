@@ -1,0 +1,10 @@
+
+tf-keras
+deepface==0.0.83
+opencv-python
+numpy
+Pillow
+sqlite-utils
+flask
+flask-sqlalchemy
+
