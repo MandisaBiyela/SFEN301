@@ -159,22 +159,22 @@ document.addEventListener('DOMContentLoaded', function() {
             populateForm(lecturerId);
         }
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Here you could update your lecturers array or send to backend
-            // For now just simulate save and redirect
-            window.location.href = 'lecturer.html?status=saved';
-        });
+        // form.addEventListener('submit', function(e) {
+        //     e.preventDefault();
+        //     // Here you could update your lecturers array or send to backend
+        //     // For now just simulate save and redirect
+        //     window.location.href = 'lecturer.html?status=saved';
+        // });
     }
 
-    // If on add lecturer page
-    const addLecturerForm = document.getElementById('add-lecturer-form');
-    if (addLecturerForm) {
-        addLecturerForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Here you could add to your lecturers array or send to backend
-            // For now just simulate save and redirect
-            window.location.href = 'lecturer.html?status=saved';
-        });
-    }
+    // // If on add lecturer page
+    // const addLecturerForm = document.getElementById('add-lecturer-form');
+    // if (addLecturerForm) {
+    //     addLecturerForm.addEventListener('submit', function(e) {
+    //         e.preventDefault();
+    //         // Here you could add to your lecturers array or send to backend
+    //         // For now just simulate save and redirect
+    //         window.location.href = 'lecturer.html?status=saved';
+    //     });
+    // }
 });

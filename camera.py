@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime
 from deepface import DeepFace
 
-# --- Configuration ---
+# --- Configuration --- nh 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database.db')
 FACES_DIR = "faces"
 TEMP_FRAME_PATH = "temp_frame.jpg"
