@@ -7,6 +7,6 @@ Pillow
 sqlite-utils
 flask
 flask-sqlalchemy
-python -m pip install deepface
+
 
 
