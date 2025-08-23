@@ -1,5 +1,8 @@
 __pycache__/
 venv/
+.venv/
+
 *.db
+*.jpg
 *.sqlite3
 faces/

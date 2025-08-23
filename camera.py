@@ -8,7 +8,7 @@ from deepface import DeepFace
 # --- Configuration ---
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database.db')
 FACES_DIR = "faces"
-TEMP_FRAME_PATH = "temp_frame.jpg"
+TEMP_FRAME_PATH =  os.path.join(FACES_DIR, "temp_frame.jpg")
 
 # -----------------------------
 # Utility Functions
@@ -111,11 +111,17 @@ def register_user():
                 embedding = compute_embedding(image_path).tobytes()
 
                 cursor.execute("""
-                    INSERT INTO students (student_number, student_name, student_surname, student_email, image_path, embedding)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (student_number, student_name, student_surname,
-                      f"{student_number}@dut4life.ac.za",
-                      image_path, embedding))
+                    INSERT INTO students (student_number, student_name, student_surname, student_email, registered_at, image_path, embedding)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                        student_number,
+                        student_name,
+                        student_surname,
+                        f"{student_number}@dut4life.ac.za",
+                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        image_path,
+                        embedding
+                    ))
                 conn.commit()
                 print(f"✅ User '{student_name} {student_surname}' registered in the database.")
             except Exception as e:
@@ -176,7 +182,7 @@ def run_attendance_system():
             print("[ERROR] 'students' table not found. Please run the Flask app first.")
             break
 
-        for user_id, name, surname, image_path, embedding_blob in users:
+        for user_id,  name, surname, image_path, embedding_blob in users:
             full_name = f"{name} {surname}"
 
             if full_name in recognized_today or not embedding_blob:

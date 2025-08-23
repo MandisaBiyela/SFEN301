@@ -24,11 +24,11 @@ class Attendance(db.Model):
     """
     __tablename__ = 'attendance'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('students.student_number'), nullable=False)
     class_period_id = db.Column(db.Integer, db.ForeignKey('class_period.id'))
     name = db.Column(db.String(100), nullable=False)
     time = db.Column(db.String(100), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    status = db.Column(db.String(50), nullable=False, default='absence')
+    status = db.Column(db.String(50), nullable=False, default='Absence')
 
     # Relationships
     student = db.relationship('Student', backref=db.backref('attendance_records', lazy=True))
@@ -60,7 +60,7 @@ class Class_Register(db.Model):
     """
     __tablename__ = 'class_register'
     id = db.Column(db.Integer, primary_key=True)
-    student_number = db.Column(db.String(50), unique=True, nullable=False)
+    student_number = db.Column(db.String(50), db.ForeignKey('students.student_number'), nullable=False)
     register_id = db.Column(db.String(50), unique=True, nullable=False)
     subject_code = db.Column(db.String(100), db.ForeignKey('subject.subject_code'), nullable=False)
     semester = db.Column(db.String(50), nullable=False)
