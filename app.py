@@ -1,4 +1,4 @@
-from flask import *
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
 import os
 from models import *
 
@@ -62,15 +62,25 @@ def lecturer():
     """
     Displays the list of all lecturers from the database.
     """
+    return render_template('lecturer.html')
+
+@app.route('/api/lecturers')
+def get_lecturers():
+    """
+    API endpoint to get all lecturers as JSON
+    """
     try:
-        # Query the database to get all lecturers, ordered by name
-        all_lecturers = Lecturer.query.order_by(Lecturer.name).all()
-        return render_template('lecturer.html', lecturers=all_lecturers)
+        lecturers = Lecturer.query.order_by(Lecturer.name).all()
+        return jsonify([{
+            'lecturer_number': l.lecturer_number,
+            'name': l.name,
+            'surname': l.surname,
+            'email': l.email,
+            'modules': [] # You can add actual modules here when that functionality is implemented
+        } for l in lecturers])
     except Exception as e:
-        # Log the error and show an error message
         print(f"Error fetching lecturers: {e}")
-        flash('Error fetching lecturer data from the database.', 'error')
-        return render_template('lecturer.html', lecturers=[])
+        return jsonify({'error': 'Error fetching lecturer data'}), 500
 
 @app.route('/lecturer_add.html', methods=['GET', 'POST'])
 def lecturer_add():
@@ -88,17 +98,14 @@ def lecturer_add():
 
         # Basic validation
         if not all([lecturer_number, name, surname, email]):
-            flash('All fields are required!', 'error')
-            return redirect(url_for('lecturer_add'))
+            return jsonify({'error': 'All fields are required!'}), 400
 
         # Check if lecturer or email already exists
         if Lecturer.query.filter_by(lecturer_number=lecturer_number).first():
-            flash('A lecturer with this number already exists.', 'warning')
-            return redirect(url_for('lecturer_add'))
+            return jsonify({'error': 'A lecturer with this number already exists.'}), 400
         
         if Lecturer.query.filter_by(email=email).first():
-            flash('This email address is already registered.', 'warning')
-            return redirect(url_for('lecturer_add'))
+            return jsonify({'error': 'This email address is already registered.'}), 400
 
         # Create a new Lecturer object
         new_lecturer = Lecturer(
@@ -112,13 +119,19 @@ def lecturer_add():
         try:
             db.session.add(new_lecturer)
             db.session.commit()
-            flash(f'Lecturer {name} {surname} added successfully!', 'success')
-            return redirect(url_for('lecturer'))
+            return jsonify({
+                'message': f'Lecturer {name} {surname} added successfully!',
+                'lecturer': {
+                    'number': lecturer_number,
+                    'name': name,
+                    'surname': surname,
+                    'email': email
+                }
+            }), 200
         except Exception as e:
             db.session.rollback()
             print(f"Error adding lecturer: {e}")
-            flash('An error occurred while adding the lecturer.', 'error')
-            return redirect(url_for('lecturer_add'))
+            return jsonify({'error': 'An error occurred while adding the lecturer.'}), 500
 
     # For a GET request, just show the form
     return render_template('lecturer_add.html')

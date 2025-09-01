@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Add New Lecturer</title>
     <link rel="stylesheet" href="static/css/lecturer.css" />
+    <link rel="stylesheet" href="static/css/notification.css" />
 </head>
 <body>
+    <div id="notification" class="notification" style="display: none;"></div>
     <header class="main-header">
         <div class="header-left">
             <a href="admin_dashboard.html">
@@ -32,7 +34,7 @@
         </div>
 
         <section class="form-container">
-            <form id="add-lecturer-form">
+            <form id="add-lecturer-form" method="POST" action="{{ url_for('lecturer_add') }}">
                 <div class="form-group">
                     <label for="lecturer-number">Lecturer Number</label>
                     <input

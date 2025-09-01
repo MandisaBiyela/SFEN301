@@ -1,35 +1,110 @@
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.style.display = 'block';
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+async function fetchLecturers() {
+    try {
+        const response = await fetch('/api/lecturers');
+        if (!response.ok) throw new Error('Failed to fetch lecturers');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching lecturers:', error);
+        return [];
+    }
+}
+
+function createLecturerRow(lecturer) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${lecturer.lecturer_number}</td>
+        <td>${lecturer.name}</td>
+        <td>${lecturer.surname}</td>
+        <td>${lecturer.email}</td>
+        <td>${(lecturer.modules || []).join(', ') || 'No modules assigned'}</td>
+        <td class="action-buttons">
+            <a href="lecturer_edit.html?id=${lecturer.lecturer_number}" class="edit-btn">
+                <img src="static/images/Edit.png" alt="Edit" />
+            </a>
+            <button class="delete-btn" data-id="${lecturer.lecturer_number}">
+                <img src="static/images/Delete.png" alt="Delete" />
+            </button>
+        </td>
+    `;
+    return row;
+}
+
+async function updateLecturerTable() {
+    const tableBody = document.getElementById('lecturer-table-body');
+    if (!tableBody) return;
+
+    const lecturers = await fetchLecturers();
+    tableBody.innerHTML = ''; // Clear existing rows
+
+    lecturers.forEach(lecturer => {
+        tableBody.appendChild(createLecturerRow(lecturer));
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Changed to let to allow modification (delete)
-    let lecturers = [
-        {
-            number: '001',
-            name: 'Jane',
-            surname: 'Doe',
-            email: 'jane.doe@dut.ac.za',
-            modules: ['Software Engineering III', 'Web Systems']
-        },
-        {
-            number: '002',
-            name: 'John',
-            surname: 'Smith',
-            email: 'john.smith@dut.ac.za',
-            modules: ['Data Structures & Algorithms']
-        },
-        {
-            number: '003',
-            name: 'Sipho',
-            surname: 'Dube',
-            email: 'sipho.dube@dut.ac.za',
-            modules: ['Database Systems', 'Operating Systems']
-        },
-        {
-            number: '004',
-            name: 'Thandiwe',
-            surname: 'Ncube',
-            email: 'thandiwe.ncube@dut.ac.za',
-            modules: ['Calculus I']
-        }
-    ];
+    // Initial load of the lecturer table
+    updateLecturerTable();
+
+    // Handle form submission
+    const addLecturerForm = document.getElementById('add-lecturer-form');
+    if (addLecturerForm) {
+        addLecturerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('/lecturer_add.html', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showNotification(result.message, 'success');
+                    // Update the lecturer table immediately
+                    await updateLecturerTable();
+                    // Clear the form
+                    this.reset();
+                } else {
+                    showNotification(result.error || 'Error adding lecturer', 'error');
+                }
+            } catch (error) {
+                showNotification('Error adding lecturer. Please try again.', 'error');
+                console.error('Error:', error);
+            }
+        });
+    }
+
+    // Search functionality
+    const searchInput = document.getElementById('lecturer-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchText = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#lecturer-table-body tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchText) ? '' : 'none';
+            });
+        });
+    }
+
+    // Initial table load
+    updateLecturerTable();
 
     // PROFILE BUTTON
     const profileBtn = document.getElementById('profile-btn');

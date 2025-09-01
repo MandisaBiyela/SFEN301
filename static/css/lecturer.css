@@ -1,6 +1,6 @@
 /* 
 ===============================
- Global & Dashboard Styles
+ Global & Dashboard Styles
 ===============================
 */
 body {
@@ -12,9 +12,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-}
-
-.main-header {
+    font-size: 14px;
+}.main-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -57,6 +56,9 @@ body {
 .dashboard-content {
     padding: 20px;
     flex-grow: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 95%;
 }
 
 .dashboard-header {
@@ -139,9 +141,9 @@ footer {
 ===============================
 */
 .search-container {
-    text-align: center;
-    margin: 40px auto 20px auto;
-    width: 60%;
+    margin: 20px auto;
+    max-width: 600px;
+    width: 100%;
 }
 
 .search-input {
@@ -156,19 +158,20 @@ footer {
 }
 
 .add-new-container {
-    text-align: center;
-    margin-bottom: 20px;
+    text-align: right;
+    margin: 20px 0;
 }
 
 .add-new-btn {
     display: inline-block;
     background-color: #3ca087;
     color: white;
-    padding: 12px 25px;
+    padding: 10px 20px;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 500;
     border-radius: 5px;
     transition: background-color 0.3s;
+    font-size: 0.95em;
 }
 
 .add-new-btn:hover {
@@ -181,20 +184,26 @@ footer {
 ===============================
 */
 .table-container {
-    background-color: #34495e;
-    padding: 20px;
+    background-color: #1f2937;
+    padding: 15px;
+    border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    margin: 0 auto;
+    overflow-x: auto;
 }
 
 .data-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
+    font-size: 0.95em;
+    background-color: #1a2332;
 }
 
 .data-table thead {
     background-color: #13192a;
     color: #f4f4f4;
+    position: sticky;
+    top: 0;
 }
 
 .data-table th, .data-table td {
