@@ -30,11 +30,11 @@ function createLecturerRow(lecturer) {
         <td>${lecturer.email}</td>
         <td>${(lecturer.modules || []).join(', ') || 'No modules assigned'}</td>
         <td class="action-buttons">
-            <a href="lecturer_edit.html?id=${lecturer.lecturer_number}" class="edit-btn">
-                <img src="static/images/Edit.png" alt="Edit" />
+            <a href="lecturer_edit.html?id=${lecturer.lecturer_number}" class="edit-btn image-btn">
+                <img src="static/images/Edit.png" alt="Edit" class="action-icon" />
             </a>
-            <button class="delete-btn" data-id="${lecturer.lecturer_number}">
-                <img src="static/images/Delete.png" alt="Delete" />
+            <button class="delete-btn image-btn" data-id="${lecturer.lecturer_number}">
+                <img src="static/images/Delete.png" alt="Delete" class="action-icon" />
             </button>
         </td>
     `;
