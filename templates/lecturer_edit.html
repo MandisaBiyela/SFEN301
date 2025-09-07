@@ -1,68 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Lecturer</title>
-    <link rel="stylesheet" href="static/css/lecturer.css">
-</head>
-<body>
-
-    <header class="main-header">
-        <div class="header-left">
-            <a href="admin_dashboard.html">
-                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
-            </a>
-        </div>
-        <div class="header-right">
-            <button id="profile-btn" class="profile-btn">Profile</button>
-            <button id="logout-btn" class="logout-btn">Logout</button>
-        </div>
-    </header>
-
-    <div class="back-button-container">
-        <a href="lecturer.html" class="back-btn" id="back-button">
-            <img src="static/images/Back.png" alt="Back" class="back-icon">
-        </a>
-    </div>
-
-    <main class="dashboard-content">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">EDIT LECTURER</h1>
-            <p class="dashboard-subtitle">Update lecturer details</p>
-        </div>
-
-        <section class="form-container">
-            <form id="edit-lecturer-form" method="post">
-                <div class="form-group">
-                    <label for="lecturer-number">Lecturer Number</label>
-                    <input type="text" id="lecturer-number" name="lecturer-number" required readonly minlength="8" maxlength="8" pattern="[0-9]{8}">
-                </div>
-                <div class="form-group">
-                    <label for="lecturer-name">Name</label>
-                    <input type="text" id="lecturer-name" name="lecturer-name" required maxlength="15" pattern="[A-Za-z ]{1,15}">
-                </div>
-                <div class="form-group">
-                    <label for="lecturer-surname">Surname</label>
-                    <input type="text" id="lecturer-surname" name="lecturer-surname" required maxlength="15" pattern="[A-Za-z ]{1,15}">
-                </div>
-                <div class="form-group">
-                    <label for="lecturer-email">Email</label>
-                    <input type="email" id="lecturer-email" name="lecturer-email" required maxlength="40" pattern=".+@dut4life\.ac\.za$">
-                </div>
-                <button type="submit" class="submit-btn">Save Changes</button>
-            </form>
-        </section>
-    </main>
-
-    <footer>
-        <p>&copy; CyberRogues Attendance System</p>
-    </footer>
-
-    <script src="static/js/lecturer.js"></script>
-</body><!DOCTYPE html>
-<html lang="en">
-<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Edit Lecturer</title>
@@ -94,7 +32,7 @@
         </div>
 
         <section class="form-container">
-            <form id="edit-lecturer-form">
+            <form id="edit-lecturer-form" method="post">
                 <div class="form-group">
                     <label for="lecturer-number">Lecturer Number</label>
                     <input type="text" id="lecturer-number" name="lecturer-number" required />

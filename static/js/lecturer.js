@@ -20,9 +20,19 @@ async function fetchLecturers() {
         return [];
     }
 }
+async function deleteLecturer(lecturerNumber) {
+    try {
+        await fetch('/api/lecturers/' + lecturerNumber, {
+            method: 'DELETE'
+        });
+    } catch (error) {
+        console.error('Error deleting lecturer:', error);
+    }
+}
 
 function createLecturerRow(lecturer) {
     const row = document.createElement('tr');
+    row.dataset.number = lecturer.lecturer_number; // store lecturer number
     row.innerHTML = `
         <td>${lecturer.lecturer_number}</td>
         <td>${lecturer.name}</td>
@@ -56,7 +66,7 @@ async function updateLecturerTable() {
 document.addEventListener('DOMContentLoaded', async function() {
     // Initial load of the lecturer table
     var lecturers = await fetchLecturers();
-    console.log(lecturers);
+    
     // Handle form submission
     const addLecturerForm = document.getElementById('add-lecturer-form');
     if (addLecturerForm) {
@@ -180,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Event delegation for delete buttons
-        lecturerTableBody.addEventListener('click', function(event) {
+        lecturerTableBody.addEventListener('click', async function(event) {
             if (event.target.closest('.delete-btn')) {
                 const row = event.target.closest('tr');
                 const lecturerNumber = row.dataset.number;
@@ -188,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // Remove lecturer from array
                     lecturers = lecturers.filter(lecturer => lecturer.lecturer_number !== lecturerNumber);
                     // TO-DO: send a request to the server to delete the lecturer
-                    // await deleteLecturer(lecturerNumber);
+                    await deleteLecturer(lecturerNumber);
                     // Re-render the table
                     renderLecturersTable(lecturers);
                 }
@@ -222,14 +232,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const form = document.getElementById('edit-lecturer-form');
         const urlParams = new URLSearchParams(window.location.search);
         const lecturerId = urlParams.get('id');
-        console.log(lecturerId)
+
 
         // Populate form with lecturer data
         function populateForm(id) {
             const lecturer = lecturers.find(l => l.lecturer_number == id);
 
             if (lecturer) {
-                console.log(lecturer);
                 document.getElementById('lecturer-number').value = lecturer.lecturer_number;
                 document.getElementById('lecturer-name').value = lecturer.name;
                 document.getElementById('lecturer-surname').value = lecturer.surname;
@@ -249,14 +258,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         // });
     }
 
-    // // If on add lecturer page
-    // const addLecturerForm = document.getElementById('add-lecturer-form');
-    // if (addLecturerForm) {
-    //     addLecturerForm.addEventListener('submit', function(e) {
-    //         e.preventDefault();
-    //         // Here you could add to your lecturers array or send to backend
-    //         // For now just simulate save and redirect
-    //         window.location.href = 'lecturer.html?status=saved';
-    //     });
-    // }
+    // If on add lecturer page
+    if (addLecturerForm) {
+        addLecturerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Here you could add to your lecturers array or send to backend
+            // For now just simulate save and redirect
+            window.location.href = 'lecturer.html?status=saved';
+        });
+    }
 });

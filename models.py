@@ -43,7 +43,7 @@ class Student(db.Model):
     """
     __tablename__ = 'students'
     id = db.Column(db.Integer, primary_key=True)
-    student_number = db.Column(db.String(50), unique=True, nullable=False)
+    student_number = db.Column(db.String(8), unique=True, nullable=False)
     student_name = db.Column(db.String(100), nullable=False)
     student_surname = db.Column(db.String(100), nullable=False)
     student_email = db.Column(db.String(120), unique=True, nullable=False)

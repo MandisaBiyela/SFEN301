@@ -82,6 +82,25 @@ def get_lecturers():
         print(f"Error fetching lecturers: {e}")
         return jsonify({'error': 'Error fetching lecturer data'}), 500
 
+@app.route('/api/lecturers/<lecturer_number>', methods = ['DELETE'])
+def delete_lecturer(lecturer_number):
+    try:
+        lecturer_to_delete = Lecturer.query.filter_by(lecturer_number=lecturer_number).first()
+        if lecturer_to_delete:
+            db.session.delete(lecturer_to_delete)
+            db.session.commit()
+            print(f"Successfully deleted lecturer")
+            return jsonify({'success': 'Successfully deleted lecturer'}), 500
+        else:
+            print(f"Lecturer {lecturer_number} doesn't exist")
+            return jsonify({'error': 'Error fetching lecturer data'}), 500
+    except Exception as e:
+        print(f"Error fetching lecturers: {e}")
+        return jsonify({'error': 'Error deleting lecturer data'}), 500
+    
+    
+
+
 @app.route('/lecturer_add.html', methods=['GET', 'POST'])
 def lecturer_add():
     """
@@ -122,7 +141,7 @@ def lecturer_add():
             return jsonify({
                 'message': f'Lecturer {name} {surname} added successfully!',
                 'lecturer': {
-                    'number': lecturer_number,
+                    'lecturer_number': lecturer_number,
                     'name': name,
                     'surname': surname,
                     'email': email
@@ -136,8 +155,36 @@ def lecturer_add():
     # For a GET request, just show the form
     return render_template('lecturer_add.html')
 
-@app.route('/lecturer_edit.html')
+@app.route('/lecturer_edit.html', methods=['GET', 'POST'])
 def lecturer_edit():
+    if request.method == 'POST':
+        # Get data from the form
+        lecturer_number = request.form.get('lecturer-number')
+        name = request.form.get('lecturer-name')
+        surname = request.form.get('lecturer-surname')
+        email = request.form.get('lecturer-email')
+
+        # Basic validation
+        if not all([lecturer_number, name, surname, email]):
+            return jsonify({'error': 'All fields are required!'}), 400
+
+        lecturer_to_update = Lecturer.query.filter_by(lecturer_number=lecturer_number).first()
+
+        # Check if the lecturer exists
+        if lecturer_to_update:
+            # Modify the attributes of the lecturer object
+            lecturer_to_update.name = name
+            lecturer_to_update.surname = surname
+            lecturer_to_update.email = email
+
+            # Commit the changes to the database
+            db.session.commit()
+            print("Record updated successfully!")
+            flash(f"Record for {lecturer_number} updated successfully!")
+            # return render_template('lecturer.html')
+        else:
+            print("Lecturer not found.")
+
     return render_template('lecturer_edit.html')
 
 @app.route('/module.html')
