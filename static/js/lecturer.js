@@ -53,10 +53,10 @@ async function updateLecturerTable() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Initial load of the lecturer table
-    updateLecturerTable();
-
+    var lecturers = await fetchLecturers();
+    console.log(lecturers);
     // Handle form submission
     const addLecturerForm = document.getElementById('add-lecturer-form');
     if (addLecturerForm) {
@@ -149,17 +149,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('lecturer-table-body')) {
         const lecturerTableBody = document.getElementById('lecturer-table-body');
         const lecturerSearchInput = document.getElementById('lecturer-search-input');
-
+        
         // Render lecturers in table
         function renderLecturersTable(lecturerArray) {
             lecturerTableBody.innerHTML = '';
             lecturerArray.forEach(lecturer => {
                 const modulesList = lecturer.modules.map(module => `<li>${module}</li>`).join('');
                 const row = document.createElement('tr');
-                row.dataset.number = lecturer.number; // store lecturer number
+                row.dataset.number = lecturer.lecturer_number; // store lecturer number
 
                 row.innerHTML = `
-                    <td>${lecturer.number}</td>
+                    <td>${lecturer.lecturer_number}</td>
                     <td>${lecturer.name}</td>
                     <td>${lecturer.surname}</td>
                     <td>${lecturer.email}</td>
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <ul class="modules-list">${modulesList}</ul>
                     </td>
                     <td>
-                        <a href="lecturer_edit.html?id=${lecturer.number}" class="image-btn edit-btn" title="Edit">
+                        <a href="lecturer_edit.html?id=${lecturer.lecturer_number}" class="image-btn edit-btn" title="Edit">
                             <img src="static/images/Edit.png" alt="Edit" class="action-icon">
                         </a>
                         <button class="image-btn delete-btn" title="Delete">
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 lecturerTableBody.appendChild(row);
             });
         }
-
+        
         // Event delegation for delete buttons
         lecturerTableBody.addEventListener('click', function(event) {
             if (event.target.closest('.delete-btn')) {
@@ -186,7 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const lecturerNumber = row.dataset.number;
                 if (confirm(`Are you sure you want to delete lecturer ${lecturerNumber}?`)) {
                     // Remove lecturer from array
-                    lecturers = lecturers.filter(lecturer => lecturer.number !== lecturerNumber);
+                    lecturers = lecturers.filter(lecturer => lecturer.lecturer_number !== lecturerNumber);
+                    // TO-DO: send a request to the server to delete the lecturer
+                    // await deleteLecturer(lecturerNumber);
                     // Re-render the table
                     renderLecturersTable(lecturers);
                 }
@@ -200,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const filteredLecturers = lecturers.filter(lecturer => {
                     const lecturerModulesString = lecturer.modules.join(' ').toLowerCase();
                     return (
-                        lecturer.number.toLowerCase().includes(query) ||
+                        lecturer.lecturer_number.toLowerCase().includes(query) ||
                         lecturer.name.toLowerCase().includes(query) ||
                         lecturer.surname.toLowerCase().includes(query) ||
                         lecturer.email.toLowerCase().includes(query) ||
@@ -213,17 +215,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         renderLecturersTable(lecturers);
     } 
+
     // If on edit lecturer page
     else if (document.getElementById('edit-lecturer-form')) {
+
         const form = document.getElementById('edit-lecturer-form');
         const urlParams = new URLSearchParams(window.location.search);
         const lecturerId = urlParams.get('id');
+        console.log(lecturerId)
 
         // Populate form with lecturer data
         function populateForm(id) {
-            const lecturer = lecturers.find(l => l.number === id);
+            const lecturer = lecturers.find(l => l.lecturer_number == id);
+
             if (lecturer) {
-                document.getElementById('lecturer-number').value = lecturer.number;
+                console.log(lecturer);
+                document.getElementById('lecturer-number').value = lecturer.lecturer_number;
                 document.getElementById('lecturer-name').value = lecturer.name;
                 document.getElementById('lecturer-surname').value = lecturer.surname;
                 document.getElementById('lecturer-email').value = lecturer.email;
