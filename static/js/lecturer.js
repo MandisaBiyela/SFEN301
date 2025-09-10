@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (confirm(`Are you sure you want to delete lecturer ${lecturerNumber}?`)) {
                     // Remove lecturer from array
                     lecturers = lecturers.filter(lecturer => lecturer.lecturer_number !== lecturerNumber);
-                    // TO-DO: send a request to the server to delete the lecturer
+                    // Update database
                     await deleteLecturer(lecturerNumber);
                     // Re-render the table
                     renderLecturersTable(lecturers);

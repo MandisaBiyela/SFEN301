@@ -62,28 +62,28 @@ class Class_Register(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_number = db.Column(db.String(50), db.ForeignKey('students.student_number'), nullable=False)
     register_id = db.Column(db.String(50), unique=True, nullable=False)
-    subject_code = db.Column(db.String(100), db.ForeignKey('subject.subject_code'), nullable=False)
+    module_code = db.Column(db.String(100), db.ForeignKey('module.module_code'), nullable=False)
     semester = db.Column(db.String(50), nullable=False)
     year = db.Column(db.String(5), default=lambda: datetime.now().strftime("%Y"))
 
     def __repr__(self):
         return f'<Class Register {self.register_id}>'
 
-class Subject(db.Model):
+class Module(db.Model):
     """
-    Represents a subject in the system.
+    Represents a module in the system.
     """
-    __tablename__ = 'subject'
+    __tablename__ = 'module'
     id = db.Column(db.Integer, primary_key=True)
-    subject_code = db.Column(db.String(50), unique=True, nullable=False)
-    subject_name = db.Column(db.String(100), nullable=False)
+    module_code = db.Column(db.String(50), unique=True, nullable=False)
+    module_name = db.Column(db.String(100), nullable=False)
     lecturer_number = db.Column(db.String(50), db.ForeignKey('lecturers.lecturer_number'), nullable=False)
 
     # Relationship to lecturer
-    lecturer = db.relationship('Lecturer', backref=db.backref('subjects', lazy=True))
+    lecturer = db.relationship('Lecturer', backref=db.backref('modules', lazy=True))
 
     def __repr__(self):
-        return f'<Subject {self.subject_code} {self.subject_name}>'
+        return f'<Module {self.module_code} {self.module_name}>'
 
 class Class_Period(db.Model):
     """

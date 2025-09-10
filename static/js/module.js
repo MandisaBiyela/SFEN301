@@ -1,204 +1,243 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Dummy Data - In a real application, this would come from a server API or localStorage
-    let dummyLecturers = JSON.parse(localStorage.getItem('dummyLecturers')) || [
-        { id: 1, name: 'Dr. John Doe', email: 'john.doe.lecturer@example.com' },
-        { id: 2, name: 'Prof. Jane Smith', email: 'jane.smith.lecturer@example.com' },
-        { id: 3, name: 'Mr. Sipho Ndlovu', email: 'sipho.ndlovu.lecturer@example.com' },
-    ];
 
-    let dummyModules = JSON.parse(localStorage.getItem('dummyModules')) || [
-        { id: 1, code: 'SFEN301', name: 'Software Engineering III', lecturer: 'Dr. John Doe' },
-        { id: 2, code: 'WEBSYS', name: 'Web Systems', lecturer: 'Prof. Jane Smith' },
-        { id: 3, code: 'DATASTR', name: 'Data Structures & Algorithms', lecturer: 'Mr. Sipho Ndlovu' },
-        { id: 4, code: 'INFOSYS', name: 'Information Systems', lecturer: 'Dr. John Doe' },
-    ];
-
-    // Update localStorage "database"
-    function updateLocalStorage() {
-        localStorage.setItem('dummyModules', JSON.stringify(dummyModules));
-        localStorage.setItem('dummyLecturers', JSON.stringify(dummyLecturers));
+async function fetchModules() {
+    try {
+        const response = await fetch('/api/modules');
+        if (!response.ok) throw new Error('Failed to fetch modules');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching modules:', error);
+        return [];
     }
+}
 
-    // Back button functionality
+async function fetchModuleById(moduleId) {
+    try {
+        const response = await fetch(`/api/modules/${moduleId}`);
+        if (!response.ok) throw new Error('Failed to fetch module');
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching module ${moduleId}:`, error);
+        return null;
+    }
+}
+
+async function fetchLecturers() {
+    try {
+        const response = await fetch('/api/lecturers');
+        if (!response.ok) throw new Error('Failed to fetch lecturers');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching lecturers:', error);
+        showStatusMessage('Could not load lecturers.', 'error');
+        return [];
+    }
+}
+
+async function deleteModule(moduleId) {
+    try {
+        const response = await fetch(`/api/modules/${moduleId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('Failed to delete module');
+        return true;
+    } catch (error) {
+        console.error('Error deleting module:', error);
+        showStatusMessage('Error deleting module.', 'error');
+        return false;
+    }
+}
+
+// Helper function to show a status message/notification
+function showStatusMessage(message, type = 'success') {
+    const messageContainer = document.getElementById('status-message-container');
+    if (messageContainer) {
+        messageContainer.textContent = message;
+        messageContainer.className = `status-message-container ${type}`; // Add type for styling
+        messageContainer.style.display = 'block';
+        setTimeout(() => {
+            messageContainer.style.display = 'none';
+        }, 5000);
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', async function() {
+
+    // --- Common Page Logic (Buttons) ---
     const backButton = document.getElementById('back-button');
     if (backButton) {
-        backButton.addEventListener('click', function(e) {
+        backButton.addEventListener('click', (e) => {
             e.preventDefault();
-            const currentPage = window.location.pathname;
-            if (currentPage.includes('module_add.html') || currentPage.includes('module_edit.html')) {
-                window.location.href = 'module.html';
-            } else {
-                window.location.href = 'admin_dashboard.html';
-            }
+            window.history.back();
         });
     }
+    document.querySelector('.logout-btn')?.addEventListener('click', () => {
+        if (confirm("Are you sure you want to log out?")) window.location.href = 'login.html';
+    });
+    document.querySelector('.profile-btn')?.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+    });
 
-    // Logout button functionality
-    const logoutBtn = document.querySelector('.logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function () {
-            const confirmLogout = confirm("Are you sure you want to log out?");
-            if (confirmLogout) {
-                sessionStorage.clear();
-                localStorage.clear();
-                window.location.href = 'login.html';
-            }
-        });
-    }
-
-    // Profile button functionality
-    const profileBtn = document.querySelector('.profile-btn');
-    if (profileBtn) {
-        profileBtn.addEventListener('click', function () {
-            window.location.href = 'profile.html';
-        });
-    }
-
-    // Helper function to show a status message
-    function showStatusMessage(message) {
-        const messageContainer = document.getElementById('status-message-container');
-        if (messageContainer) {
-            messageContainer.textContent = message;
-            messageContainer.style.display = 'block';
-            setTimeout(() => {
-                messageContainer.style.display = 'none';
-            }, 5000);
-        }
-    }
 
     // --- Module Management Page Logic ---
-    const moduleList = document.getElementById('module-list');
-    if (moduleList) {
+    if (document.getElementById('module-list')) {
+        const moduleListBody = document.getElementById('module-list');
         const moduleSearchInput = document.getElementById('module-search-input');
+        let allModules = []; // Cache for searching
 
-        function renderModuleTable(modulesToRender) {
-            moduleList.innerHTML = '';
-            if (modulesToRender.length === 0) {
-                moduleList.innerHTML = '<tr><td colspan="4" style="text-align:center;">No modules found.</td></tr>';
+        async function renderModuleTable() {
+            allModules = await fetchModules();
+            const query = moduleSearchInput.value.toLowerCase();
+            const filteredModules = allModules.filter(module =>
+                module.code.toLowerCase().includes(query) ||
+                module.name.toLowerCase().includes(query) ||
+                module.lecturer.toLowerCase().includes(query)
+            );
+
+            moduleListBody.innerHTML = '';
+            if (filteredModules.length === 0) {
+                moduleListBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No modules found.</td></tr>';
                 return;
             }
 
-            modulesToRender.forEach(module => {
+            filteredModules.forEach(module => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${module.code}</td>
                     <td>${module.name}</td>
                     <td>${module.lecturer}</td>
                     <td>
-                        <a href="module_edit.html?id=${module.id}" class="image-btn edit-btn">
+                        <a href="module_edit.html?id=${module.code}" class="image-btn edit-btn" title="Edit">
                             <img src="/static/images/Edit.png" alt="Edit" class="action-icon">
                         </a>
-                        <button class="image-btn delete-btn" data-id="${module.id}">
+                        <button class="image-btn delete-btn" data-id="${module.code}" title="Delete">
                             <img src="/static/images/Delete.png" alt="Delete" class="action-icon">
                         </button>
                     </td>
                 `;
-                moduleList.appendChild(row);
+                moduleListBody.appendChild(row);
             });
-            // Attach event listeners to the new delete buttons
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const moduleId = this.dataset.id;
-                    if (confirm(`Are you sure you want to delete module with ID ${moduleId}?`)) {
-                        dummyModules = dummyModules.filter(module => module.id != moduleId);
-                        updateLocalStorage();
-                        window.location.href = 'module.html?status=deleted';
+        }
+
+        // Event delegation for delete buttons
+        moduleListBody.addEventListener('click', async (event) => {
+            const deleteButton = event.target.closest('.delete-btn');
+            if (deleteButton) {
+                const moduleId = deleteButton.dataset.id;
+                if (confirm(`Are you sure you want to delete this module?`)) {
+                    const success = await deleteModule(moduleId);
+                    if (success) {
+                        showStatusMessage('Module has been successfully deleted.');
+                        renderModuleTable(); // Re-render the table
                     }
-                });
-            });
-        }
+                }
+            }
+        });
 
-        function filterModules() {
-            const query = moduleSearchInput.value.toLowerCase();
-            const filteredModules = dummyModules.filter(module =>
-                module.code.toLowerCase().includes(query) ||
-                module.name.toLowerCase().includes(query) ||
-                module.lecturer.toLowerCase().includes(query)
-            );
-            renderModuleTable(filteredModules);
-        }
+        moduleSearchInput.addEventListener('input', renderModuleTable);
 
-        moduleSearchInput.addEventListener('input', filterModules);
-        renderModuleTable(dummyModules);
-
-        // Show status messages based on URL params
+        // Initial table load and status messages
+        renderModuleTable();
         const params = new URLSearchParams(window.location.search);
         const status = params.get('status');
-        if (status) {
-            let message = '';
-            if (status === 'added') message = 'Module has been successfully added.';
-            else if (status === 'edited') message = 'Module details have been successfully updated.';
-            else if (status === 'deleted') message = 'Module has been successfully deleted.';
-            if (message) showStatusMessage(message);
-        }
+        if (status === 'added') showStatusMessage('Module has been successfully added.');
+        if (status === 'edited') showStatusMessage('Module details have been successfully updated.');
     }
+
 
     // --- Add Module Page Logic ---
-    const addModuleForm = document.getElementById('add-module-form');
-    if (addModuleForm) {
-        const moduleCodeInput = document.getElementById('module-code');
-        const moduleNameInput = document.getElementById('module-name');
+    if (document.getElementById('add-module-form')) {
+        const addModuleForm = document.getElementById('add-module-form');
         const lecturerSelect = document.getElementById('lecturer');
 
-        // Sort lecturers alphabetically and populate dropdown
-        dummyLecturers.sort((a, b) => a.name.localeCompare(b.name));
-        dummyLecturers.forEach(lecturer => {
-            const option = document.createElement('option');
-            option.value = lecturer.name;
-            option.textContent = lecturer.name;
-            lecturerSelect.appendChild(option);
+        // Populate lecturer dropdown
+        const lecturers = await fetchLecturers();
+        lecturers.sort((a, b) => a.name.localeCompare(b.name));
+        lecturers.forEach(lecturer => {
+            const option = new Option(`${lecturer.name}`, lecturer.lecturer_number);
+            lecturerSelect.add(option);
         });
 
-        addModuleForm.addEventListener('submit', function(e) {
+        addModuleForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const newModule = {
-                id: dummyModules.length > 0 ? Math.max(...dummyModules.map(m => m.id)) + 1 : 1,
-                code: moduleCodeInput.value.trim(),
-                name: moduleNameInput.value.trim(),
-                lecturer: lecturerSelect.value
+            const moduleData = {
+                code: document.getElementById('module-code').value.trim(),
+                name: document.getElementById('module-name').value.trim(),
+                lecturer_number: lecturerSelect.value
             };
-            dummyModules.push(newModule);
-            updateLocalStorage();
-            console.log('Added new module:', newModule);
-            // Redirects to module.html with a success message
-            window.location.href = 'module.html?status=added';
+
+            const response = await fetch('/api/modules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(moduleData)
+            });
+
+            if (response.ok) {
+                window.location.href = 'module.html?status=added';
+            } else {
+                const result = await response.json();
+                showStatusMessage(result.error || 'Error adding module.', 'error');
+            }
         });
     }
 
+
     // --- Edit Module Page Logic ---
-    const editModuleForm = document.getElementById('edit-module-form');
-    if (editModuleForm) {
+    if (document.getElementById('edit-module-form')) {
+        const editModuleForm = document.getElementById('edit-module-form');
         const params = new URLSearchParams(window.location.search);
         const moduleId = params.get('id');
-        const moduleToEdit = dummyModules.find(m => m.id == moduleId);
+
+        if (!moduleId) {
+            showStatusMessage('No module ID provided for editing.', 'error');
+            return;
+        }
+
+        // Fetch both module and lecturer data in parallel
+        const [moduleToEdit, lecturers] = await Promise.all([
+            fetchModuleById(moduleId),
+            fetchLecturers()
+        ]);
 
         if (moduleToEdit) {
+            // Populate form fields
             document.getElementById('module-code').value = moduleToEdit.code;
             document.getElementById('module-name').value = moduleToEdit.name;
 
+            // Populate lecturer dropdown
             const lecturerSelect = document.getElementById('lecturer');
-            // Clear existing options and repopulate dropdown
-            lecturerSelect.innerHTML = '';
-            dummyLecturers.sort((a, b) => a.name.localeCompare(b.name));
-            dummyLecturers.forEach(lecturer => {
-                const option = document.createElement('option');
-                option.value = lecturer.name;
-                option.textContent = lecturer.name;
-                lecturerSelect.appendChild(option);
+            lecturers.sort((a, b) => a.name.localeCompare(b.name));
+            lecturers.forEach(lecturer => {
+                const option = new Option(`${lecturer.name}`, lecturer.lecturer_number);
+                lecturerSelect.add(option);
             });
-            // Set the value after populating the options
-            lecturerSelect.value = moduleToEdit.lecturer;
+            // Set the correct lecturer as selected
+            lecturerSelect.value = moduleToEdit.lecturer_number;
 
-            editModuleForm.addEventListener('submit', function(e) {
+            // Handle form submission
+            editModuleForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                moduleToEdit.code = document.getElementById('module-code').value.trim();
-                moduleToEdit.name = document.getElementById('module-name').value.trim();
-                moduleToEdit.lecturer = document.getElementById('lecturer').value;
-                updateLocalStorage();
-                window.location.href = 'module.html?status=edited';
+                const updatedData = {
+                    code: document.getElementById('module-code').value.trim(),
+                    name: document.getElementById('module-name').value.trim(),
+                    lecturer_number: lecturerSelect.value
+                };
+
+                const response = await fetch(`/api/modules/${moduleId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (response.ok) {
+                    window.location.href = 'module.html?status=edited';
+                } else {
+                    const result = await response.json();
+                    showStatusMessage(result.error || 'Error updating module.', 'error');
+                }
             });
         } else {
-            console.error('Module not found for editing.');
+            showStatusMessage('Could not find module to edit.', 'error');
         }
     }
 });

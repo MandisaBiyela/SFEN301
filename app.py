@@ -64,43 +64,6 @@ def lecturer():
     """
     return render_template('lecturer.html')
 
-@app.route('/api/lecturers')
-def get_lecturers():
-    """
-    API endpoint to get all lecturers as JSON
-    """
-    try:
-        lecturers = Lecturer.query.order_by(Lecturer.name).all()
-        return jsonify([{
-            'lecturer_number': l.lecturer_number,
-            'name': l.name,
-            'surname': l.surname,
-            'email': l.email,
-            'modules': [] # You can add actual modules here when that functionality is implemented
-        } for l in lecturers])
-    except Exception as e:
-        print(f"Error fetching lecturers: {e}")
-        return jsonify({'error': 'Error fetching lecturer data'}), 500
-
-@app.route('/api/lecturers/<lecturer_number>', methods = ['DELETE'])
-def delete_lecturer(lecturer_number):
-    try:
-        lecturer_to_delete = Lecturer.query.filter_by(lecturer_number=lecturer_number).first()
-        if lecturer_to_delete:
-            db.session.delete(lecturer_to_delete)
-            db.session.commit()
-            print(f"Successfully deleted lecturer")
-            return jsonify({'success': 'Successfully deleted lecturer'}), 500
-        else:
-            print(f"Lecturer {lecturer_number} doesn't exist")
-            return jsonify({'error': 'Error fetching lecturer data'}), 500
-    except Exception as e:
-        print(f"Error fetching lecturers: {e}")
-        return jsonify({'error': 'Error deleting lecturer data'}), 500
-    
-    
-
-
 @app.route('/lecturer_add.html', methods=['GET', 'POST'])
 def lecturer_add():
     """
@@ -187,6 +150,7 @@ def lecturer_edit():
 
     return render_template('lecturer_edit.html')
 
+
 @app.route('/module.html')
 def module():
     return render_template('module.html')
@@ -243,6 +207,133 @@ def register_student():
 def attendance():
     return render_template('attendance.html')
 
+# --- LECTURER API ENDPOINTS ---
+
+@app.route('/api/lecturers')
+def get_lecturers():
+    """
+    API endpoint to get all lecturers as JSON
+    """
+    try:
+        lecturers = Lecturer.query.order_by(Lecturer.lecturer_number).all()
+        return jsonify([{
+            'lecturer_number': l.lecturer_number,
+            'name': l.name,
+            'surname': l.surname,
+            'email': l.email,
+            'modules': [m.module_code for m in Module.query.filter_by(lecturer_number=l.lecturer_number).limit(5)]
+        } for l in lecturers])
+    except Exception as e:
+        print(f"Error fetching lecturers: {e}")
+        return jsonify({'error': 'Error fetching lecturer data'}), 500
+
+@app.route('/api/lecturers/<lecturer_number>', methods = ['DELETE'])
+def delete_lecturer(lecturer_number):
+    try:
+        lecturer_to_delete = Lecturer.query.filter_by(lecturer_number=lecturer_number).first()
+        if lecturer_to_delete:
+            db.session.delete(lecturer_to_delete)
+            db.session.commit()
+            print(f"Successfully deleted lecturer")
+            return jsonify({'success': 'Successfully deleted lecturer'}), 500
+        else:
+            print(f"Lecturer {lecturer_number} doesn't exist")
+            return jsonify({'error': 'Error fetching lecturer data'}), 500
+    except Exception as e:
+        print(f"Error fetching lecturers: {e}")
+        return jsonify({'error': 'Error deleting lecturer data'}), 500
+
+
+
+# --- MODULE API ENDPOINTS (NEW & UPDATED) ---
+
+@app.route('/api/modules')
+def get_modules():
+    """
+    API endpoint to get all modules as JSON
+    """
+    try:
+        modules = Module.query.order_by(Module.module_name).all()
+        return jsonify([{
+            'lecturer': m.lecturer_number,
+            'name': m.module_name,
+            'code': m.module_code
+        } for m in modules])
+    except Exception as e:
+        print(f"Error fetching lecturers: {e}")
+        return jsonify({'error': 'Error fetching lecturer data'}), 500
+
+@app.route('/api/modules/<module_id>', methods=['GET'])
+def get_module(module_id):
+    """ API endpoint to get a single module by its ID. """
+    try:
+        module = Module.query.filter_by(module_code = module_id).first()
+        if module:
+            return jsonify({
+                'id': module.id,
+                'code': module.module_code,
+                'name': module.module_name,
+                'lecturer_number': module.lecturer_number
+            })
+        return jsonify({'error': 'Module not found'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Error fetching module: {e}'}), 500
+
+@app.route('/api/modules', methods=['POST'])
+def add_module():
+    """ API endpoint to add a new module. """
+    data = request.get_json()
+    module_code = data.get('code')
+    module_name = data.get('name')
+    lecturer_number = data.get('lecturer_number')
+
+    if not all([module_code, module_name, lecturer_number]):
+        return jsonify({'error': 'Module code, name, and lecturer are required'}), 400
+    if Module.query.filter_by(module_code=module_code).first():
+        return jsonify({'error': f'Module with code {module_code} already exists'}), 409
+
+    new_module = Module(module_code=module_code, module_name=module_name, lecturer_number=lecturer_number)
+    try:
+        db.session.add(new_module)
+        db.session.commit()
+        return jsonify({'message': 'Module added successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {e}'}), 500
+
+@app.route('/api/modules/<module_id>', methods=['PUT'])
+def update_module(module_id):
+    """ API endpoint to update an existing module. """
+    module_to_update = Module.query.filter_by(module_code = module_id).first()
+    if not module_to_update:
+        return jsonify({'error': 'Module not found'}), 404
+
+    data = request.get_json()
+    module_to_update.module_code = data.get('code', module_to_update.module_code)
+    module_to_update.module_name = data.get('name', module_to_update.module_name)
+    module_to_update.lecturer_number = data.get('lecturer_number', module_to_update.lecturer_number)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Module updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {e}'}), 500
+
+@app.route('/api/modules/<module_id>', methods=['DELETE'])
+def delete_module(module_id):
+    """ API endpoint to delete a module. """
+    module_to_delete = Module.query.filter_by(module_code = module_id).first()
+    if not module_to_delete:
+        return jsonify({'error': 'Module not found'}), 404
+
+    try:
+        db.session.delete(module_to_delete)
+        db.session.commit()
+        return jsonify({'message': 'Module deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {e}'}), 500
 
 
 
