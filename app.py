@@ -16,6 +16,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Optional: to suppress a warning
 app.config['SECRET_KEY'] = 'your_super_secret_key' # Required for flashing messages
+
 faces_path = os.path.join(basedir, 'static', 'faces')
 os.makedirs(faces_path, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = faces_path
@@ -437,13 +438,14 @@ def add_student():
     # Handle module registrations
     module_codes = data.get('modules', [])
     for code in module_codes:
+        semester = '2'
         # Create a unique register ID
-        register_id = f"{student_number}-{code}"
+        register_id = f"{code}-{semester}-{datetime.now().strftime("%Y")}"
         new_register = Class_Register(
             student_number=student_number,
             register_id=register_id,
             module_code=code,
-            semester="1" # Default semester, adjust as needed
+            semester=semester
         )
         db.session.add(new_register)
 
