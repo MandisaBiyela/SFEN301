@@ -1,416 +1,342 @@
+async function fetchStudents() {
+    const response = await fetch('/api/students');
+    if (!response.ok) throw new Error('Failed to fetch students');
+    return response.json();
+}
+
+async function fetchStudent(studentNumber) {
+    const response = await fetch(`/api/students/${studentNumber}`);
+    if (!response.ok) return null;
+    return response.json();
+}
+
+async function fetchAllModules() {
+    // Assuming you have an endpoint that returns all possible modules
+    const response = await fetch('/api/modules');
+    if (!response.ok) throw new Error('Failed to fetch modules');
+    return response.json();
+}
+
+async function deleteStudent(studentNumber) {
+    const response = await fetch(`/api/students/${studentNumber}`, { method: 'DELETE' });
+    return response.ok;
+}
+
+async function registerFace(studentNumber, imageDataUrl) {
+    const response = await fetch('/api/register_face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_number: studentNumber, image_data: imageDataUrl })
+    });
+    return response;
+}
+
+// --- Global UI & Navigation ---
+
+function showStatusMessage(message, type = 'success') {
+    const container = document.getElementById('status-message-container');
+    if (container) {
+        container.textContent = message;
+        container.className = `status-message-container ${type}`;
+        container.style.display = 'block';
+        setTimeout(() => { container.style.display = 'none'; }, 5000);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Dummy Data to simulate a database for students and modules
-    let dummyStudents = JSON.parse(localStorage.getItem('dummyStudents')) || [
-        {
-            id: 1,
-            studentNumber: '2211445',
-            name: 'Alice',
-            surname: 'Johnson',
-            faceIdVerified: true,
-            faceIdImage: 'https://i.imgur.com/g05Fz7H.png',
-            modules: ['sfen301', 'websys']
-        },
-        {
-            id: 2,
-            studentNumber: '2211556',
-            name: 'Bob',
-            surname: 'Williams',
-            faceIdVerified: false,
-            faceIdImage: null,
-            modules: ['websys']
-        },
-        {
-            id: 3,
-            studentNumber: '2211667',
-            name: 'Charlie',
-            surname: 'Brown',
-            faceIdVerified: true,
-            faceIdImage: 'https://i.imgur.com/T0b4717.png',
-            modules: ['sfen301', 'compnet']
-        },
-        {
-            id: 4,
-            studentNumber: '2211778',
-            name: 'Diana',
-            surname: 'Prince',
-            faceIdVerified: true,
-            faceIdImage: null,
-            modules: ['compnet', 'prg201']
-        },
-        {
-            id: 5,
-            studentNumber: '2211889',
-            name: 'Eve',
-            surname: 'Adams',
-            faceIdVerified: false,
-            faceIdImage: null,
-            modules: ['websys', 'compnet']
-        }
-    ];
+    document.getElementById('back-button')?.addEventListener('click', e => {
+        e.preventDefault();
+        window.history.back();
+    });
+    document.querySelector('.logout-btn')?.addEventListener('click', () => {
+        if (confirm("Are you sure?")) window.location.href = 'login.html';
+    });
+    document.querySelector('.profile-btn')?.addEventListener('click', () => {
+        window.location.href = 'profile.html';
+    });
 
-    const allModules = [
-        { value: 'sfen301', name: 'Software Engineering III' },
-        { value: 'websys', name: 'Web Systems' },
-        { value: 'datastr', name: 'Data Structures & Algorithms' },
-        { value: 'infosys', name: 'Information Systems' },
-        { value: 'compnet', name: 'Computer Networks' },
-        { value: 'prg101', name: 'Programming I' },
-        { value: 'prg201', name: 'Programming II' },
-        { value: 'dbs101', name: 'Databases I' }
-    ];
-
-    // Update localStorage "database"
-    function updateLocalStorage() {
-        localStorage.setItem('dummyStudents', JSON.stringify(dummyStudents));
-    }
-
-    // --- Global Navigation and UI Functions ---
-    const backButton = document.getElementById('back-button');
-    if (backButton) {
-        backButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            const currentPage = window.location.pathname;
-            if (currentPage.includes('student_add.html') || currentPage.includes('student_edit.html')) {
-                window.location.href = 'student.html';
-            } else {
-                window.location.href = 'admin_dashboard.html';
-            }
-        });
-    }
-
-    const logoutBtn = document.querySelector('.logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function () {
-            const confirmLogout = confirm("Are you sure you want to log out?");
-            if (confirmLogout) {
-                sessionStorage.clear();
-                localStorage.clear();
-                window.location.href = 'login.html';
-            }
-        });
-    }
-
-    const profileBtn = document.querySelector('.profile-btn');
-    if (profileBtn) {
-        profileBtn.addEventListener('click', function () {
-            window.location.href = 'profile.html';
-        });
-    }
-
-    function showStatusMessage(message) {
-        const messageContainer = document.getElementById('status-message-container');
-        if (messageContainer) {
-            messageContainer.textContent = message;
-            messageContainer.style.display = 'block';
-            setTimeout(() => {
-                messageContainer.style.display = 'none';
-            }, 5000);
-        }
-    }
-
-    // --- Module Checkbox Rendering Logic ---
-    const moduleSelectionBox = document.querySelector('.module-selection-box');
-    const moduleSearchInput = document.getElementById('module-search');
-
-    function renderModules(modulesToRender, selectedModules = []) {
-        if (moduleSelectionBox) {
-            moduleSelectionBox.innerHTML = '';
-            modulesToRender.forEach(module => {
-                const isChecked = selectedModules.includes(module.value) ? 'checked' : '';
-                const checkboxGroup = document.createElement('div');
-                checkboxGroup.classList.add('checkbox-group');
-                checkboxGroup.innerHTML = `
-                    <input type="checkbox" id="module-${module.value}" name="modules" value="${module.value}" ${isChecked}>
-                    <label for="module-${module.value}">${module.name}</label>
-                `;
-                moduleSelectionBox.appendChild(checkboxGroup);
-            });
-        }
-    }
-
-    if (moduleSearchInput) {
-        moduleSearchInput.addEventListener('input', function(e) {
-            const query = e.target.value.toLowerCase();
-            const filteredModules = allModules.filter(module =>
-                module.name.toLowerCase().includes(query)
-            );
-            renderModules(filteredModules);
-        });
-    }
-
-    // --- Face ID Registration Logic ---
-    const cameraBox = document.getElementById('camera-box');
-    const cameraOverlay = document.getElementById('camera-overlay');
-    const webcamVideo = document.getElementById('webcam');
-    const faceIdButtonsContainer = document.getElementById('face-id-buttons');
-    let videoStream;
-    let faceIdRegistered = false;
-    let faceIdImageUrl = null;
-
-    async function startCamera() {
-        try {
-            const constraints = { video: true };
-            videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-            webcamVideo.srcObject = videoStream;
-            cameraBox.classList.add('active');
-            cameraOverlay.style.display = 'none';
-            webcamVideo.style.display = 'block';
-            faceIdButtonsContainer.innerHTML = `
-                <button type="button" id="take-and-register-btn" class="main-btn">Take and Register Face ID</button>
-            `;
-            document.getElementById('take-and-register-btn').addEventListener('click', takeAndRegisterFaceID);
-        } catch (err) {
-            console.error("Error accessing the camera: ", err);
-            alert("Could not access camera. Please check your permissions.");
-        }
-    }
-
-    function stopCamera() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            webcamVideo.srcObject = null;
-        }
-    }
-
-    function takeAndRegisterFaceID() {
-        if (!videoStream) {
-            alert('Please start the camera first.');
-            return;
-        }
-
-        const studentNumber = document.getElementById('student-number').value;
-        if (!studentNumber) {
-            alert('Please enter a student number before registering Face ID.');
-            return;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = webcamVideo.videoWidth;
-        canvas.height = webcamVideo.videoHeight;
-        const context = canvas.getContext('2d');
-        context.translate(canvas.width, 0);
-        context.scale(-1, 1);
-        context.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
-        faceIdImageUrl = canvas.toDataURL('image/jpeg');
-
-        const capturedImage = document.createElement('img');
-        capturedImage.src = faceIdImageUrl;
-        capturedImage.style.width = '100%';
-        capturedImage.style.height = '100%';
-        capturedImage.style.objectFit = 'cover';
-        capturedImage.id = 'captured-preview';
-        
-        stopCamera();
-        
-        // Hide the video and append the captured image
-        webcamVideo.style.display = 'none';
-        cameraBox.appendChild(capturedImage);
-        cameraBox.classList.remove('active');
-
-        faceIdRegistered = true;
-
-        faceIdButtonsContainer.innerHTML = `
-            <button type="button" id="retake-id-btn" class="secondary-btn">Retake Face ID</button>
-        `;
-        document.getElementById('retake-id-btn').addEventListener('click', retakeFaceID);
-    }
-
-    function retakeFaceID() {
-        const capturedPreview = document.getElementById('captured-preview');
-        if (capturedPreview) {
-            capturedPreview.remove();
-        }
-        
-        faceIdButtonsContainer.innerHTML = '';
-        
-        // This will now properly restart the camera and show the video feed
-        startCamera();
-        
-        faceIdRegistered = false;
-        faceIdImageUrl = null;
-    }
-
-    function displayInitialPreview(imageUrl) {
-        // Ensure the camera elements are not visible
-        if (cameraOverlay) cameraOverlay.style.display = 'none';
-        if (webcamVideo) webcamVideo.style.display = 'none';
-
-        const capturedImage = document.createElement('img');
-        capturedImage.src = imageUrl;
-        capturedImage.style.width = '100%';
-        capturedImage.style.height = '100%';
-        capturedImage.style.objectFit = 'cover';
-        capturedImage.id = 'captured-preview';
-        cameraBox.appendChild(capturedImage);
-        
-        faceIdButtonsContainer.innerHTML = `
-            <button type="button" id="retake-id-btn" class="secondary-btn">Retake Face ID</button>
-        `;
-        document.getElementById('retake-id-btn').addEventListener('click', retakeFaceID);
-    }
-
-    // --- Student Management Page Logic ---
-    const studentTableBody = document.getElementById('student-table-body');
-    if (studentTableBody) {
-        const studentSearchInput = document.getElementById('student-search-input');
-
-        function renderStudents(studentsToRender) {
-            studentTableBody.innerHTML = '';
-            if (studentsToRender.length === 0) {
-                studentTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No students found.</td></tr>';
-                return;
-            }
-            studentsToRender.forEach(student => {
-                const moduleNames = student.modules.map(moduleValue => {
-                    const module = allModules.find(m => m.value === moduleValue);
-                    return module ? module.name : moduleValue;
-                });
-                const moduleListHTML = moduleNames.map(name => `<li>${name}</li>`).join('');
-                const faceIdIconUrl = student.faceIdVerified ? '/static/images/YesFaceID.png' : '/static/images/NoFaceID.png';
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${student.studentNumber}</td>
-                    <td>${student.name}</td>
-                    <td>${student.surname}</td>
-                    <td><img src="${faceIdIconUrl}" alt="Face ID Status" class="face-id-icon" loading="lazy"></td>
-                    <td class="module-list"><ul>${moduleListHTML}</ul></td>
-                    <td>
-                        <a href="student_edit.html?id=${student.id}" class="image-btn edit-btn">
-                            <img src="/static/images/Edit.png" alt="Edit" class="action-icon">
-                        </a>
-                        <button class="image-btn delete-btn" data-id="${student.id}">
-                            <img src="/static/images/Delete.png" alt="Delete" class="action-icon">
-                        </button>
-                    </td>
-                `;
-                studentTableBody.appendChild(row);
-            });
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const studentId = this.dataset.id;
-                    if (confirm(`Are you sure you want to delete student with ID ${studentId}?`)) {
-                        dummyStudents = dummyStudents.filter(student => student.id != studentId);
-                        updateLocalStorage();
-                        window.location.href = 'student.html?status=deleted';
-                    }
-                });
-            });
-        }
-
-        function filterStudents() {
-            const query = studentSearchInput.value.toLowerCase();
-            const filteredStudents = dummyStudents.filter(student =>
-                student.studentNumber.toLowerCase().includes(query) ||
-                student.name.toLowerCase().includes(query) ||
-                student.surname.toLowerCase().includes(query)
-            );
-            renderStudents(filteredStudents);
-        }
-
-        studentSearchInput.addEventListener('input', filterStudents);
-        renderStudents(dummyStudents);
-
-        const params = new URLSearchParams(window.location.search);
-        const status = params.get('status');
-        if (status) {
-            let message = '';
-            if (status === 'added') message = 'Student has been successfully added.';
-            else if (status === 'edited') message = 'Student details have been successfully updated.';
-            else if (status === 'deleted') message = 'Student has been successfully deleted.';
-            if (message) showStatusMessage(message);
-        }
-    }
-
-    // --- Add New Student Page Logic ---
-    const addStudentForm = document.getElementById('add-student-form');
-    if (addStudentForm) {
-        if (cameraOverlay) {
-            cameraOverlay.addEventListener('click', startCamera);
-        }
-
-        // Initial render of all modules for the add page
-        renderModules(allModules);
-
-        addStudentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const studentNumber = document.getElementById('student-number').value.trim();
-            const studentName = document.getElementById('student-name').value.trim();
-            const studentSurname = document.getElementById('student-surname').value.trim();
-            const selectedModules = Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value);
-            
-            // Check if Face ID is registered
-            if (!faceIdRegistered) {
-                // If not, show a confirmation dialog
-                const confirmAdd = confirm(`Are you sure you want to add student ${studentNumber} without a Face ID?`);
-                if (!confirmAdd) {
-                    // User chose to cancel, so we stop the form submission
-                    return; 
-                }
-            }
-
-            const newStudent = {
-                id: dummyStudents.length > 0 ? Math.max(...dummyStudents.map(s => s.id)) + 1 : 1,
-                studentNumber: studentNumber,
-                name: studentName,
-                surname: studentSurname,
-                faceIdVerified: faceIdRegistered,
-                faceIdImage: faceIdImageUrl,
-                modules: selectedModules
-            };
-            
-            dummyStudents.push(newStudent);
-            updateLocalStorage();
-            window.location.href = 'student.html?status=added';
-        });
-    }
-
-    // --- Edit Student Page Logic ---
-    const editStudentForm = document.getElementById('edit-student-form');
-    if (editStudentForm) {
-        const params = new URLSearchParams(window.location.search);
-        const studentId = parseInt(params.get('id'));
-        const studentToEdit = dummyStudents.find(s => s.id === studentId);
-
-        if (studentToEdit) {
-            document.getElementById('student-number').value = studentToEdit.studentNumber;
-            document.getElementById('student-name').value = studentToEdit.name;
-            document.getElementById('student-surname').value = studentToEdit.surname;
-            
-            renderModules(allModules, studentToEdit.modules);
-            
-            if (studentToEdit.faceIdVerified && studentToEdit.faceIdImage) {
-                displayInitialPreview(studentToEdit.faceIdImage);
-                faceIdRegistered = true;
-                faceIdImageUrl = studentToEdit.faceIdImage;
-            } else {
-                if (cameraOverlay) {
-                    cameraOverlay.addEventListener('click', startCamera);
-                }
-            }
-            
-            editStudentForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                if (!faceIdRegistered) {
-                    alert('Please register a Face ID before saving.');
-                    return;
-                }
-
-                studentToEdit.studentNumber = document.getElementById('student-number').value.trim();
-                studentToEdit.name = document.getElementById('student-name').value.trim();
-                studentToEdit.surname = document.getElementById('student-surname').value.trim();
-                studentToEdit.faceIdVerified = faceIdRegistered;
-                studentToEdit.faceIdImage = faceIdImageUrl;
-                studentToEdit.modules = Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value);
-
-                updateLocalStorage();
-                window.location.href = 'student.html?status=edited';
-            });
-        } else {
-            console.error('Student not found for editing.');
-            alert('Student not found! Redirecting to student list.');
-            window.location.href = 'student.html';
-        }
+    // --- Page-Specific Logic ---
+    const pagePath = window.location.pathname;
+    if (pagePath.includes('student.html')) {
+        initStudentListPage();
+    } else if (pagePath.includes('student_add.html')) {
+        initAddStudentPage();
+    } else if (pagePath.includes('student_edit.html')) {
+        initEditStudentPage();
     }
 });
+
+
+// --- Student Management (List) Page ---
+async function initStudentListPage() {
+    const tableBody = document.getElementById('student-table-body');
+    const searchInput = document.getElementById('student-search-input');
+    let allStudents = [];
+    let allModulesInfo = [];
+
+    function renderStudents(studentsToRender) {
+        tableBody.innerHTML = '';
+        if (studentsToRender.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No students found.</td></tr>';
+            return;
+        }
+        studentsToRender.forEach(student => {
+            const faceIdIconUrl = student.has_face_id ? '/static/images/YesFaceID.png' : '/static/images/NoFaceID.png';
+            const moduleListHTML = student.modules.map(code => `<li>${code}</li>`).join('');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${student.student_number}</td>
+                <td>${student.name}</td>
+                <td>${student.surname}</td>
+                <td><img src="${faceIdIconUrl}" alt="Face ID Status" class="face-id-icon"></td>
+                <td class="module-list"><ul>${moduleListHTML}</ul></td>
+                <td>
+                    <a href="student_edit.html?number=${student.student_number}" class="image-btn edit-btn" title="Edit">
+                        <img src="/static/images/Edit.png" alt="Edit" class="action-icon">
+                    </a>
+                    <button class="image-btn delete-btn" data-number="${student.student_number}" title="Delete">
+                        <img src="/static/images/Delete.png" alt="Delete" class="action-icon">
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase();
+        const filtered = allStudents.filter(s =>
+            s.student_number.toLowerCase().includes(query) ||
+            s.name.toLowerCase().includes(query) ||
+            s.surname.toLowerCase().includes(query)
+        );
+        renderStudents(filtered);
+    });
+
+    tableBody.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-btn');
+        if (deleteBtn) {
+            const studentNumber = deleteBtn.dataset.number;
+            if (confirm(`Delete student ${studentNumber}? This is permanent.`)) {
+                if (await deleteStudent(studentNumber)) {
+                    showStatusMessage('Student deleted successfully.');
+                    allStudents = await fetchStudents();
+                    renderStudents(allStudents);
+                } else {
+                    showStatusMessage('Failed to delete student.', 'error');
+                }
+            }
+        }
+    });
+    
+    // Initial load
+    allStudents = await fetchStudents();
+    renderStudents(allStudents);
+
+    const status = new URLSearchParams(window.location.search).get('status');
+    if (status === 'added') showStatusMessage('Student added successfully.');
+    if (status === 'edited') showStatusMessage('Student details updated.');
+}
+
+
+// --- Add/Edit Page Common Logic ---
+
+let videoStream;
+let faceIdImageUrl = null; // Stores Base64 image data URL
+
+async function startCamera(webcamEl, overlayEl, buttonsEl) {
+    try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        webcamEl.srcObject = videoStream;
+        webcamEl.parentElement.classList.add('active');
+        overlayEl.style.display = 'none';
+        webcamEl.style.display = 'block';
+        buttonsEl.innerHTML = `<button type="button" id="capture-btn" class="main-btn">Capture Face</button>`;
+        document.getElementById('capture-btn').addEventListener('click', () => captureFace(webcamEl, buttonsEl));
+    } catch (err) {
+        alert("Could not access camera. Please check permissions.");
+    }
+}
+
+function stopCamera() {
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+    }
+}
+
+function captureFace(webcamEl, buttonsEl) {
+    const canvas = document.createElement('canvas');
+    canvas.width = webcamEl.videoWidth;
+    canvas.height = webcamEl.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(webcamEl, 0, 0, canvas.width, canvas.height);
+    faceIdImageUrl = canvas.toDataURL('image/jpeg');
+    
+    stopCamera();
+    
+    webcamEl.style.display = 'none';
+    const preview = document.createElement('img');
+    preview.src = faceIdImageUrl;
+    preview.className = 'face-preview';
+    webcamEl.parentElement.querySelector('.face-preview')?.remove();
+    webcamEl.parentElement.appendChild(preview);
+
+    buttonsEl.innerHTML = `<button type="button" id="retake-btn" class="secondary-btn">Retake</button>`;
+    document.getElementById('retake-btn').addEventListener('click', () => {
+        preview.remove();
+        faceIdImageUrl = null;
+        startCamera(webcamEl, webcamEl.parentElement.querySelector('.camera-overlay'), buttonsEl);
+    });
+}
+
+async function renderModuleCheckboxes(container, allModules, selectedModuleCodes = []) {
+    container.innerHTML = '';
+    allModules.forEach(module => {
+        const isChecked = selectedModuleCodes.includes(module.code) ? 'checked' : '';
+        container.innerHTML += `
+            <div class="checkbox-group">
+                <input type="checkbox" id="module-${module.code}" name="modules" value="${module.code}" ${isChecked}>
+                <label for="module-${module.code}">${module.name} (${module.code})</label>
+            </div>
+        `;
+    });
+}
+
+
+// --- Add Student Page ---
+async function initAddStudentPage() {
+    const form = document.getElementById('add-student-form');
+    const webcamEl = document.getElementById('webcam');
+    const overlayEl = document.getElementById('camera-overlay');
+    const buttonsEl = document.getElementById('face-id-buttons');
+    const moduleBox = document.querySelector('.module-selection-box');
+    
+    overlayEl.addEventListener('click', () => startCamera(webcamEl, overlayEl, buttonsEl));
+    
+    const allModules = await fetchAllModules();
+    renderModuleCheckboxes(moduleBox, allModules);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const studentNumber = document.getElementById('student-number').value;
+
+        if (!faceIdImageUrl) {
+            if (!confirm("Add student without a Face ID?")) return;
+        }
+
+        const studentData = {
+            student_number: studentNumber,
+            name: document.getElementById('student-name').value,
+            surname: document.getElementById('student-surname').value,
+            modules: Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value),
+        };
+        if (studentData.modules.length == 0) {
+            alert('No modules selected!');
+            window.location.href = 'student_add.html';
+            return;
+        }
+        const addResponse = await fetch('/api/students', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(studentData)
+        });
+
+        if (!addResponse.ok) {
+            const err = await addResponse.json();
+            showStatusMessage(err.error || 'Failed to add student.', 'error');
+            return;
+        }
+
+        if (faceIdImageUrl) {
+            const faceResponse = await registerFace(studentNumber, faceIdImageUrl);
+            if (!faceResponse.ok) {
+                const err = await faceResponse.json();
+                showStatusMessage(err.error || 'Student added, but Face ID failed.', 'error');
+                return;
+            }
+        }
+        window.location.href = 'student.html?status=added';
+    });
+}
+
+// --- Edit Student Page ---
+async function initEditStudentPage() {
+    const form = document.getElementById('edit-student-form');
+    const studentNumber = new URLSearchParams(window.location.search).get('number');
+    if (!studentNumber) {
+        alert('No student number provided!');
+        window.location.href = 'student.html';
+        return;
+    }
+
+    const [student, allModules] = await Promise.all([
+        fetchStudent(studentNumber),
+        fetchAllModules()
+    ]);
+
+    if (!student) {
+        alert('Student not found!');
+        return;
+    }
+
+    document.getElementById('student-number').value = student.student_number;
+    document.getElementById('student-name').value = student.name;
+    document.getElementById('student-surname').value = student.surname;
+
+    const moduleBox = document.querySelector('.module-selection-box');
+    renderModuleCheckboxes(moduleBox, allModules, student.modules);
+
+    const webcamEl = document.getElementById('webcam');
+    const overlayEl = document.getElementById('camera-overlay');
+    const buttonsEl = document.getElementById('face-id-buttons');
+
+    if (student.has_face_id && student.face_id_image_url) {
+        overlayEl.style.display = 'none';
+        const preview = document.createElement('img');
+        preview.src = `/${student.face_id_image_url}`; // Assumes the URL is relative
+        preview.className = 'face-preview';
+        webcamEl.parentElement.appendChild(preview);
+        buttonsEl.innerHTML = `<button type="button" id="retake-btn" class="secondary-btn">Retake Face ID</button>`;
+        document.getElementById('retake-btn').addEventListener('click', () => {
+            preview.remove();
+            startCamera(webcamEl, overlayEl, buttonsEl);
+        });
+    } else {
+        overlayEl.addEventListener('click', () => startCamera(webcamEl, overlayEl, buttonsEl));
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const studentData = {
+            name: document.getElementById('student-name').value,
+            surname: document.getElementById('student-surname').value,
+            modules: Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value)
+        };
+
+        if (studentData.modules.length == 0) {
+            alert('No modules selected!');
+            window.location.href = `student_edit.html?number=${studentNumber}`;
+            return;
+        }
+        const updateResponse = await fetch(`/api/students/${studentNumber}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(studentData)
+        });
+
+        if (!updateResponse.ok) {
+            showStatusMessage('Failed to update student details.', 'error');
+            return;
+        }
+
+        if (faceIdImageUrl) { // faceIdImageUrl is only set if a new face was captured
+            const faceResponse = await registerFace(studentNumber, faceIdImageUrl);
+             if (!faceResponse.ok) {
+                const err = await faceResponse.json();
+                showStatusMessage(err.error || 'Details saved, but Face ID update failed.', 'error');
+                return;
+            }
+        }
+        window.location.href = 'student.html?status=edited';
+    });
+}

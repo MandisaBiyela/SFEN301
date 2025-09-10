@@ -1,5 +1,10 @@
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash
 import os
+from datetime import datetime
+import base64
+import numpy as np
+import cv2
+from deepface import DeepFace
 from models import *
 
 app = Flask(__name__)
@@ -11,6 +16,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Optional: to suppress a warning
 app.config['SECRET_KEY'] = 'your_super_secret_key' # Required for flashing messages
+app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'faces')
+
 
 # Initialize the database with the app
 db.init_app(app)
@@ -24,6 +31,35 @@ def create_tables():
     with app.app_context():
         db.create_all()
 
+# --- Face Recognition Helper Function (from camera.py) ---
+def compute_embedding(image_bytes):
+    """
+    Decodes image bytes, converts to numpy array, and computes face embedding.
+    """
+    try:
+        # Decode image bytes into an OpenCV image
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if img is None:
+            raise ValueError("Could not decode image bytes.")
+
+        # Use DeepFace to generate the embedding
+        embedding_objs = DeepFace.represent(
+            img_path=img,
+            model_name="Facenet512",
+            detector_backend="retinaface",
+            enforce_detection=True # Ensure a face is found
+        )
+        # Extract the embedding vector
+        embedding = embedding_objs[0]["embedding"]
+        return np.array(embedding, dtype=np.float32)
+
+    except Exception as e:
+        print(f"Error in compute_embedding: {e}")
+        # This will often fail if DeepFace can't find a face in the image.
+        # The `enforce_detection=True` is important for this.
+        return None
 
 
 #Incase i want to check the login as the first page
@@ -150,7 +186,6 @@ def lecturer_edit():
 
     return render_template('lecturer_edit.html')
 
-
 @app.route('/module.html')
 def module():
     return render_template('module.html')
@@ -243,9 +278,7 @@ def delete_lecturer(lecturer_number):
         print(f"Error fetching lecturers: {e}")
         return jsonify({'error': 'Error deleting lecturer data'}), 500
 
-
-
-# --- MODULE API ENDPOINTS (NEW & UPDATED) ---
+# --- MODULE API ENDPOINTS ---
 
 @app.route('/api/modules')
 def get_modules():
@@ -334,6 +367,177 @@ def delete_module(module_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Database error: {e}'}), 500
+
+# --- STUDENT API ENDPOINTS ---
+
+@app.route('/api/students', methods=['GET'])
+def get_students():
+    """ API to get a list of all students and their registered modules. """
+    try:
+        students = Student.query.order_by(Student.student_surname).all()
+        student_list = []
+        for s in students:
+            # Find all modules this student is registered for
+            registrations = Class_Register.query.filter_by(student_number=s.student_number).all()
+            module_codes = [reg.module_code for reg in registrations]
+            student_list.append({
+                'id': s.id,
+                'student_number': s.student_number,
+                'name': s.student_name,
+                'surname': s.student_surname,
+                'has_face_id': s.embedding is not None,
+                'modules': module_codes
+            })
+        return jsonify(student_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students/<student_number>', methods=['GET'])
+def get_student(student_number):
+    """ API to get details for a single student. """
+    try:
+        student = Student.query.filter_by(student_number=student_number).first()
+        if not student:
+            return jsonify({'error': 'Student not found'}), 404
+
+        registrations = Class_Register.query.filter_by(student_number=student.student_number).all()
+        module_codes = [reg.module_code for reg in registrations]
+
+        return jsonify({
+            'id': student.id,
+            'student_number': student.student_number,
+            'name': student.student_name,
+            'surname': student.student_surname,
+            'has_face_id': student.embedding is not None,
+            'face_id_image_url': student.image_path, # URL to the saved face image
+            'modules': module_codes
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students', methods=['POST'])
+def add_student():
+    """ API to add a new student record (without face ID). """
+    data = request.get_json()
+    student_number = data.get('student_number')
+    if Student.query.filter_by(student_number=student_number).first():
+        return jsonify({'error': 'Student number already exists'}), 409
+
+    new_student = Student(
+        student_number=student_number,
+        student_name=data.get('name'),
+        student_surname=data.get('surname'),
+        student_email=f"{student_number}@dut4life.ac.za", # Auto-generate email
+        registered_at = datetime.now().strftime("%d/%m/%Y, %H:%M:%S") 
+    )
+    db.session.add(new_student)
+
+    # Handle module registrations
+    module_codes = data.get('modules', [])
+    for code in module_codes:
+        # Create a unique register ID
+        register_id = f"{student_number}-{code}"
+        new_register = Class_Register(
+            student_number=student_number,
+            register_id=register_id,
+            module_code=code,
+            semester="1" # Default semester, adjust as needed
+        )
+        db.session.add(new_register)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Student added successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students/<student_number>', methods=['PUT'])
+def update_student(student_number):
+    """ API to update a student's details and module registrations. """
+    student = Student.query.filter_by(student_number=student_number).first_or_404()
+    data = request.get_json()
+
+    student.student_name = data.get('name', student.student_name)
+    student.student_surname = data.get('surname', student.student_surname)
+
+    # Update module registrations: delete old ones, add new ones.
+    Class_Register.query.filter_by(student_number=student_number).delete()
+    module_codes = data.get('modules', [])
+    for code in module_codes:
+        register_id = f"{student_number}-{code}"
+        new_register = Class_Register(student_number=student_number, register_id=register_id, module_code=code, semester="1")
+        db.session.add(new_register)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Student updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/students/<student_number>', methods=['DELETE'])
+def delete_student(student_number):
+    """ API to delete a student and all their related records. """
+    student = Student.query.filter_by(student_number=student_number).first_or_404()
+
+    # Delete related records first to maintain data integrity
+    Attendance.query.filter_by(user_id=student.student_number).delete()
+    Class_Register.query.filter_by(student_number=student_number).delete()
+
+    db.session.delete(student)
+    try:
+        db.session.commit()
+        # Optionally delete the student's face image file
+        if student.image_path and os.path.exists(os.path.join(basedir, student.image_path)):
+            os.remove(os.path.join(basedir, student.image_path))
+        return jsonify({'message': 'Student deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/register_face', methods=['POST'])
+def register_face():
+    """
+    API to handle face registration. Receives image data from the browser,
+    computes embedding, and saves it to the database.
+    """
+    data = request.get_json()
+    student_number = data.get('student_number')
+    image_data_url = data.get('image_data') # This is a Base64 Data URL
+
+    if not all([student_number, image_data_url]):
+        return jsonify({'error': 'Student number and image data are required'}), 400
+
+    student = Student.query.filter_by(student_number=student_number).first_or_404()
+
+    try:
+        # Decode the Base64 image data
+        header, encoded = image_data_url.split(',', 1)
+        image_bytes = base64.b64decode(encoded)
+
+        # Compute the embedding
+        embedding = compute_embedding(image_bytes)
+        if embedding is None:
+            return jsonify({'error': 'No face detected or image is unclear. Please try again.'}), 400
+
+        # Save the raw image file to the server
+        image_filename = f"{student_number}.jpg"
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+        with open(image_path, "wb") as f:
+            f.write(image_bytes)
+
+        # Update the student record in the database
+        student.embedding = embedding.tobytes()
+        student.image_path = f"static/faces/{image_filename}" # Store the relative path
+        db.session.commit()
+
+        return jsonify({'message': 'Face ID registered successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Face registration error: {e}")
+        return jsonify({'error': 'An internal error occurred during face registration.'}), 500
 
 
 

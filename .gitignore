@@ -5,4 +5,5 @@ venv/
 *.db
 *.jpg
 *.sqlite3
-faces/
+static/faces/*.jpg
+
