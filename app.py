@@ -16,7 +16,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Optional: to suppress a warning
 app.config['SECRET_KEY'] = 'your_super_secret_key' # Required for flashing messages
-app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'static', 'faces')
+faces_path = os.path.join(basedir, 'static', 'faces')
+os.makedirs(faces_path, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = faces_path
 
 
 # Initialize the database with the app
