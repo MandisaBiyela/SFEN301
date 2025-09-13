@@ -1,41 +1,42 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Dummy Data
-    const dummyStudents = [
-        { id: 1, studentNumber: '2211445', name: 'Alice', surname: 'Johnson', faceIdVerified: true, modules: ['sfen301', 'websys'] },
-        { id: 2, studentNumber: '2211556', name: 'Bob', surname: 'Williams', faceIdVerified: false, modules: ['websys'] },
-        { id: 3, studentNumber: '2211667', name: 'Charlie', surname: 'Brown', faceIdVerified: true, modules: ['sfen301', 'compnet'] },
-        { id: 4, studentNumber: '2211778', name: 'Diana', surname: 'Prince', faceIdVerified: true, modules: ['sfen301', 'websys'] }
-    ];
-
-    const allModules = [
-        { value: 'sfen301', name: 'Software Engineering III' },
-        { value: 'websys', name: 'Web Systems' },
-        { value: 'datastr', name: 'Data Structures & Algorithms' },
-        { value: 'infosys', name: 'Information Systems' },
-        { value: 'compnet', name: 'Computer Networks' },
-        { value: 'prg101', name: 'Programming I' },
-        { value: 'prg201', name: 'Programming II' },
-        { value: 'dbs101', name: 'Databases I' }
-    ];
-    
-    const modulePeriods = ['09:00', '11:00', '13:00', '15:00'];
-    const cancelledPeriods = new Set(['2025-08-01-13:00', '2025-08-03-09:00']);
-
-    const dummyAttendance = [
-        { studentId: 1, module: 'websys', date: '2025-08-01', time: '09:00' },
-        { studentId: 2, module: 'websys', date: '2025-08-01', time: '09:02' },
-        { studentId: 4, module: 'websys', date: '2025-08-01', time: '09:03' },
-        { studentId: 1, module: 'websys', date: '2025-08-01', time: '11:00' },
-        { studentId: 2, module: 'websys', date: '2025-08-01', time: '11:05' },
-        { studentId: 3, module: 'sfen301', date: '2025-08-01', time: '11:05' },
-        { studentId: 1, module: 'sfen301', date: '2025-08-01', time: '11:00' },
-        { studentId: 4, module: 'sfen301', date: '2025-08-02', time: '11:15' },
-        { studentId: 2, module: 'websys', date: '2025-08-02', time: '09:10' },
-        { studentId: 4, module: 'websys', date: '2025-08-02', time: '09:15' }
-    ];
+    // Real data from APIs
+    let allStudents = [];
+    let allModules = [];
+    let allPeriods = [];
+    let allAttendance = [];
+    let cancelledPeriods = new Set();
 
     const presentImg = 'static/images/Attended.png';
     const notPresentImg = 'static/images/NotAttend.png';
+
+    // Fetch data from APIs
+    async function fetchAllData() {
+        try {
+            const [studentsResponse, modulesResponse, periodsResponse, attendanceResponse] = await Promise.all([
+                fetch('/api/students'),
+                fetch('/api/modules'),
+                fetch('/api/periods'),
+                fetch('/api/attendance')
+            ]);
+
+            if (!studentsResponse.ok || !modulesResponse.ok || !periodsResponse.ok || !attendanceResponse.ok) {
+                throw new Error('Failed to fetch data');
+            }
+
+            allStudents = await studentsResponse.json();
+            allModules = await modulesResponse.json();
+            allPeriods = await periodsResponse.json();
+            allAttendance = await attendanceResponse.json();
+
+            // Populate dropdowns
+            populateModules();
+            populatePeriods();
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            alert('Error loading data. Please try again.');
+        }
+    }
 
     // DOM Elements
     const moduleSelect = document.getElementById('module-select');
@@ -64,21 +65,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Populate modules dropdown
     function populateModules() {
+        if (!moduleSelect) return;
+        moduleSelect.innerHTML = '<option value="">Select a Module</option>';
+        
         allModules.sort((a, b) => a.name.localeCompare(b.name));
         allModules.forEach(module => {
             const option = document.createElement('option');
-            option.value = module.value;
+            option.value = module.code;
             option.textContent = module.name;
             moduleSelect.appendChild(option);
         });
     }
 
-    // Populate periods dropdown
+    // Populate periods dropdown based on selected module
     function populatePeriods() {
+        if (!periodSelect) return;
+        periodSelect.innerHTML = '<option value="">Select a Period</option>';
+        
+        const selectedModule = moduleSelect.value;
+        if (!selectedModule) return;
+
+        // Get periods for the selected module
+        const modulePeriods = allPeriods.filter(period => 
+            period.module_codes && period.module_codes.includes(selectedModule)
+        );
+
+        // Group periods by time and create unique time slots
+        const timeSlots = new Set();
         modulePeriods.forEach(period => {
+            const time = new Date(period.period_time).toTimeString().substring(0, 5);
+            timeSlots.add(time);
+        });
+
+        timeSlots.forEach(time => {
             const option = document.createElement('option');
-            option.value = period;
-            option.textContent = `${period} - ${addMinutes(period, 60)}`;
+            option.value = time;
+            option.textContent = `${time} - ${addMinutes(time, 105)}`; // 1h45m duration
             periodSelect.appendChild(option);
         });
     }
@@ -90,65 +112,66 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedPeriod = periodSelect.value;
         const searchQuery = studentSearchInput.value.toLowerCase();
 
-        const periodKey = `${selectedDate}-${selectedPeriod}`;
-        const moduleStudents = dummyStudents.filter(s => s.modules.includes(selectedModule));
+        if (!selectedModule || !selectedDate || !selectedPeriod) {
+            attendanceTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Please select module, date, and period.</td></tr>';
+            return;
+        }
+
+        // Get students registered for the selected module
+        const moduleStudents = allStudents.filter(student => 
+            student.modules && student.modules.includes(selectedModule)
+        );
         const totalStudentsCount = moduleStudents.length;
 
-        if (cancelledPeriods.has(periodKey)) {
-            attendanceTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px;">This period was cancelled.</td></tr>`;
-            totalStudentsSpan.textContent = totalStudentsCount;
-            totalPresentSpan.textContent = '0';
-            periodRateSpan.textContent = '0%';
-        } else {
-            const periodAttendance = dummyAttendance.filter(r =>
-                r.module === selectedModule &&
-                r.date === selectedDate &&
-                r.time.startsWith(selectedPeriod)
-            );
+        // Get attendance records for the selected period
+        const periodAttendance = allAttendance.filter(record => {
+            const recordDate = new Date(record.time).toISOString().split('T')[0];
+            const recordTime = new Date(record.time).toTimeString().substring(0, 5);
+            return recordDate === selectedDate && recordTime === selectedPeriod;
+        });
 
-            const presentStudentsInPeriod = new Set(periodAttendance.map(r => r.studentId)).size;
-            const periodRate = totalStudentsCount > 0 ? ((presentStudentsInPeriod / totalStudentsCount) * 100).toFixed(2) : 0;
+        const presentStudentsInPeriod = new Set(periodAttendance.map(r => r.user_id)).size;
+        const periodRate = totalStudentsCount > 0 ? ((presentStudentsInPeriod / totalStudentsCount) * 100).toFixed(2) : 0;
 
-            totalStudentsSpan.textContent = totalStudentsCount;
-            totalPresentSpan.textContent = presentStudentsInPeriod;
-            periodRateSpan.textContent = `${periodRate}%`;
+        totalStudentsSpan.textContent = totalStudentsCount;
+        totalPresentSpan.textContent = presentStudentsInPeriod;
+        periodRateSpan.textContent = `${periodRate}%`;
 
-            attendanceTableBody.innerHTML = '';
+        attendanceTableBody.innerHTML = '';
 
-            const filteredStudents = moduleStudents.filter(student => {
-                const fullName = (student.name + ' ' + student.surname).toLowerCase();
-                return fullName.includes(searchQuery) || student.studentNumber.toLowerCase().includes(searchQuery);
+        const filteredStudents = moduleStudents.filter(student => {
+            const fullName = (student.name + ' ' + student.surname).toLowerCase();
+            return fullName.includes(searchQuery) || student.student_number.toLowerCase().includes(searchQuery);
+        });
+
+        if (filteredStudents.length > 0) {
+            filteredStudents.forEach(student => {
+                const isPresent = periodAttendance.some(r => r.user_id === student.student_number);
+                const statusImageSrc = isPresent ? presentImg : notPresentImg;
+                const statusAlt = isPresent ? 'Present' : 'Absent';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.student_number}</td>
+                    <td>${student.name} ${student.surname}</td>
+                    <td><img src="${statusImageSrc}" alt="${statusAlt}" class="status-icon"></td>
+                    <td><button class="action-btn student-stats-btn" data-student-id="${student.student_number}" data-module-id="${selectedModule}">View Stats</button></td>
+                `;
+                attendanceTableBody.appendChild(row);
             });
-
-            if (filteredStudents.length > 0) {
-                filteredStudents.forEach(student => {
-                    const isPresent = periodAttendance.some(r => r.studentId === student.id);
-                    const statusImageSrc = isPresent ? presentImg : notPresentImg;
-                    const statusAlt = isPresent ? 'Present' : 'Absent';
-
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${student.studentNumber}</td>
-                        <td>${student.name} ${student.surname}</td>
-                        <td><img src="${statusImageSrc}" alt="${statusAlt}" class="status-icon"></td>
-                        <td><button class="action-btn student-stats-btn" data-student-id="${student.id}" data-module-id="${selectedModule}">View Stats</button></td>
-                    `;
-                    attendanceTableBody.appendChild(row);
-                });
-            } else {
-                attendanceTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No students found or registered for this module.</td></tr>`;
-            }
+        } else {
+            attendanceTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No students found or registered for this module.</td></tr>`;
         }
 
         // Module Attendance Rate calculation
-        const moduleAttendanceRecords = dummyAttendance.filter(r => {
-            const recPeriodKey = `${r.date}-${r.time.substring(0, 5)}`;
-            return r.module === selectedModule && !cancelledPeriods.has(recPeriodKey);
+        const moduleAttendanceRecords = allAttendance.filter(record => {
+            // This would need to be enhanced based on how you want to calculate module attendance
+            return record.student_name && record.student_name.toLowerCase().includes(selectedModule.toLowerCase());
         });
 
-        const uniqueSessions = new Set(moduleAttendanceRecords.map(r => `${r.date}-${r.time.substring(0,5)}`)).size;
+        const uniqueSessions = new Set(moduleAttendanceRecords.map(r => r.time.substring(0, 10))).size;
         const totalPossibleAttendance = totalStudentsCount * uniqueSessions;
-        const totalActualAttendance = new Set(moduleAttendanceRecords.map(r => `${r.studentId}-${r.date}-${r.time.substring(0,5)}`)).size;
+        const totalActualAttendance = new Set(moduleAttendanceRecords.map(r => `${r.user_id}-${r.time.substring(0, 10)}`)).size;
         const moduleRate = totalPossibleAttendance > 0 ? ((totalActualAttendance / totalPossibleAttendance) * 100).toFixed(2) : 0;
 
         moduleRateSpan.textContent = `${moduleRate}%`;
@@ -161,25 +184,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show student stats modal
     function showStudentStats(event) {
-        const studentId = parseInt(event.target.dataset.studentId, 10);
+        const studentId = event.target.dataset.studentId;
         const moduleId = event.target.dataset.moduleId;
 
-        const student = dummyStudents.find(s => s.id === studentId);
-        const module = allModules.find(m => m.value === moduleId);
+        const student = allStudents.find(s => s.student_number === studentId);
+        const module = allModules.find(m => m.code === moduleId);
 
-        const studentAttendanceRecords = dummyAttendance.filter(r => {
-            const recPeriodKey = `${r.date}-${r.time.substring(0, 5)}`;
-            return r.studentId === studentId && r.module === moduleId && !cancelledPeriods.has(recPeriodKey);
-        });
+        if (!student || !module) {
+            alert('Student or module not found');
+            return;
+        }
 
-        const totalAttendedPeriods = new Set(studentAttendanceRecords.map(r => `${r.date}-${r.time.substring(0,5)}`)).size;
+        // Get attendance records for this student and module
+        const studentAttendanceRecords = allAttendance.filter(record => 
+            record.user_id === studentId
+        );
 
-        const allModuleRecords = dummyAttendance.filter(r => {
-            const recPeriodKey = `${r.date}-${r.time.substring(0, 5)}`;
-            return r.module === moduleId && !cancelledPeriods.has(recPeriodKey);
-        });
+        const totalAttendedPeriods = new Set(studentAttendanceRecords.map(r => r.time.substring(0, 10))).size;
 
-        const totalPossiblePeriods = new Set(allModuleRecords.map(r => `${r.date}-${r.time.substring(0,5)}`)).size;
+        // Calculate total possible periods (this would need to be enhanced based on your period structure)
+        const totalPossiblePeriods = allPeriods.filter(period => 
+            period.module_codes && period.module_codes.includes(moduleId)
+        ).length;
 
         const attendanceRate = totalPossiblePeriods > 0 ? ((totalAttendedPeriods / totalPossiblePeriods) * 100).toFixed(2) : 0;
 
@@ -279,11 +305,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Event listeners for filtering
-    moduleSelect.addEventListener('change', renderAttendance);
-    specificDateInput.addEventListener('change', renderAttendance);
-    periodSelect.addEventListener('change', renderAttendance);
-    studentSearchInput.addEventListener('input', renderAttendance);
-    printAttendanceBtn.addEventListener('click', printAttendanceReport);
+    if (moduleSelect) {
+        moduleSelect.addEventListener('change', () => {
+            populatePeriods(); // Update periods when module changes
+            renderAttendance();
+        });
+    }
+    if (specificDateInput) {
+        specificDateInput.addEventListener('change', renderAttendance);
+    }
+    if (periodSelect) {
+        periodSelect.addEventListener('change', renderAttendance);
+    }
+    if (studentSearchInput) {
+        studentSearchInput.addEventListener('input', renderAttendance);
+    }
+    if (printAttendanceBtn) {
+        printAttendanceBtn.addEventListener('click', printAttendanceReport);
+    }
 
     // Back button navigates back in history
     if (backButton) {
@@ -311,14 +350,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize dropdowns and render
-    populateModules();
-    populatePeriods();
-
-    // Set default values
-    moduleSelect.value = 'websys';
-    specificDateInput.value = '2025-08-01';
-    periodSelect.value = '09:00';
-
-    renderAttendance();
+    // Initialize data and render
+    fetchAllData().then(() => {
+        // Set default values after data is loaded
+        if (allModules.length > 0) {
+            moduleSelect.value = allModules[0].code;
+            populatePeriods();
+        }
+        
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        if (specificDateInput) {
+            specificDateInput.value = today;
+        }
+        
+        renderAttendance();
+    });
 });

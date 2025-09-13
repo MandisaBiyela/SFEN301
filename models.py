@@ -43,7 +43,7 @@ class Student(db.Model):
     """
     __tablename__ = 'students'
     id = db.Column(db.Integer, primary_key=True)
-    student_number = db.Column(db.String(8), unique=True, nullable=False)
+    student_number = db.Column(db.String(8), unique=True, nullable=False, index=True)
     student_name = db.Column(db.String(100), nullable=False)
     student_surname = db.Column(db.String(100), nullable=False)
     student_email = db.Column(db.String(120), unique=True, nullable=False)
@@ -62,9 +62,13 @@ class Class_Register(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_number = db.Column(db.String(50), db.ForeignKey('students.student_number'), nullable=False)
     register_id = db.Column(db.String(50), unique=True, nullable=False)
-    module_code = db.Column(db.String(100), db.ForeignKey('module.module_code'), nullable=False)
+    subject_code = db.Column(db.String(100), db.ForeignKey('module.module_code'), nullable=False)
     semester = db.Column(db.String(50), nullable=False)
     year = db.Column(db.String(5), default=lambda: datetime.now().strftime("%Y"))
+
+    # Relationships
+    student = db.relationship('Student', backref=db.backref('class_registrations', lazy=True))
+    module = db.relationship('Module', backref=db.backref('class_registrations', lazy=True))
 
     def __repr__(self):
         return f'<Class Register {self.register_id}>'

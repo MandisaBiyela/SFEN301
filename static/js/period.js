@@ -30,21 +30,89 @@ document.addEventListener('DOMContentLoaded', function() {
     const modulePeriodsTableBody = document.getElementById('module-periods-table-body');
     const searchInput = document.getElementById('module-period-search-input');
 
-    // Demo data for module periods
-    const allModulesWithPeriods = [
-        { code: 'prg301', name: 'Advanced Programming', periods: [{ day: 'Monday', time: '10:00 - 11:45', venue: 'Room 101' }, { day: 'Wednesday', time: '14:00 - 15:45', venue: 'Room 203' }] },
-        { code: 'databs', name: 'Database Systems', periods: [{ day: 'Tuesday', time: '08:00 - 09:45', venue: 'Lab B' }, { day: 'Thursday', time: '13:00 - 14:45', venue: 'Room 105' }] },
-        { code: 'sftwre', name: 'Software Engineering', periods: [{ day: 'Friday', time: '09:00 - 12:45', venue: 'Room 103' }] },
-        { code: 'netwk', name: 'Computer Networks', periods: [] }
-    ];
+    let allModules = [];
+    let allPeriods = [];
+    let allVenues = [];
+
+    // Fetch data from APIs
+    async function fetchData() {
+        try {
+            // Fetch modules, periods, and venues in parallel
+            const [modulesResponse, periodsResponse, venuesResponse] = await Promise.all([
+                fetch('/api/modules'),
+                fetch('/api/periods'),
+                fetch('/api/venues')
+            ]);
+
+            if (!modulesResponse.ok || !periodsResponse.ok || !venuesResponse.ok) {
+                throw new Error('Failed to fetch data');
+            }
+
+            allModules = await modulesResponse.json();
+            allPeriods = await periodsResponse.json();
+            allVenues = await venuesResponse.json();
+
+            // Group periods by module
+            const modulesWithPeriods = allModules.map(module => {
+                const modulePeriods = allPeriods.filter(period => 
+                    period.module_codes && period.module_codes.includes(module.code)
+                );
+                
+                return {
+                    code: module.code,
+                    name: module.name,
+                    periods: modulePeriods.map(period => ({
+                        id: period.id,
+                        period_id: period.period_id,
+                        day: extractDayFromTime(period.period_time),
+                        time: formatTimeRange(period.period_time),
+                        venue: period.venue_name,
+                        venue_id: period.venue_id
+                    }))
+                };
+            });
+
+            renderModulePeriodsTable(modulesWithPeriods);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            if (modulePeriodsTableBody) {
+                modulePeriodsTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Error loading data. Please try again.</td></tr>';
+            }
+        }
+    }
+
+    // Helper function to extract day from datetime string
+    function extractDayFromTime(timeString) {
+        if (!timeString) return 'Unknown';
+        const date = new Date(timeString);
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days[date.getDay()];
+    }
+
+    // Helper function to format time range
+    function formatTimeRange(timeString) {
+        if (!timeString) return 'Unknown';
+        const date = new Date(timeString);
+        const startTime = date.toTimeString().substring(0, 5);
+        const endTime = new Date(date.getTime() + 105 * 60000).toTimeString().substring(0, 5); // Add 1h45m
+        return `${startTime} - ${endTime}`;
+    }
 
     function renderModulePeriodsTable(modules) {
         if (!modulePeriodsTableBody) return;
         modulePeriodsTableBody.innerHTML = '';
+        
+        if (modules.length === 0) {
+            modulePeriodsTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No modules found</td></tr>';
+            return;
+        }
+
         modules.forEach(module => {
             let periodsContent;
             if (module.periods.length > 0) {
-                const periodsHtml = module.periods.map(period => `<li>${period.day}: ${period.time} (${period.venue})</li>`).join('');
+                const periodsHtml = module.periods.map(period => 
+                    `<li>${period.day}: ${period.time} (${period.venue})</li>`
+                ).join('');
                 periodsContent = `<ul>${periodsHtml}</ul>`;
             } else {
                 periodsContent = '-';
@@ -56,14 +124,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${module.name}</td>
                 <td>${periodsContent}</td>
                 <td>
-                    <button class="image-btn edit-btn">
+                    <button class="image-btn edit-btn" data-module-code="${module.code}">
                         <img src="static/images/Edit.png" alt="Edit" class="action-icon">
                     </button>
                 </td>
             `;
             // Edit button navigates to edit page with module code param
-            row.querySelector('.edit-btn').addEventListener('click', () => {
-                window.location.href = `period_edit.html?code=${module.code}`;
+            row.querySelector('.edit-btn').addEventListener('click', (e) => {
+                const moduleCode = e.target.closest('.edit-btn').dataset.moduleCode;
+                window.location.href = `period_edit.html?code=${moduleCode}`;
             });
             modulePeriodsTableBody.appendChild(row);
         });
@@ -72,34 +141,148 @@ document.addEventListener('DOMContentLoaded', function() {
     function searchModulePeriods() {
         if (!searchInput) return;
         const query = searchInput.value.toLowerCase();
-        const filteredModules = allModulesWithPeriods.filter(module => 
-            module.code.toLowerCase().includes(query) || 
-            module.name.toLowerCase().includes(query) ||
-            module.periods.some(period => 
-                (period.day && period.day.toLowerCase().includes(query)) || 
-                (period.time && period.time.toLowerCase().includes(query)) || 
-                (period.venue && period.venue.toLowerCase().includes(query))
-            )
-        );
-        renderModulePeriodsTable(filteredModules);
+        
+        // Re-fetch and filter data
+        fetchData().then(() => {
+            const modulesWithPeriods = allModules.map(module => {
+                const modulePeriods = allPeriods.filter(period => 
+                    period.module_codes && period.module_codes.includes(module.code)
+                );
+                
+                return {
+                    code: module.code,
+                    name: module.name,
+                    periods: modulePeriods.map(period => ({
+                        id: period.id,
+                        period_id: period.period_id,
+                        day: extractDayFromTime(period.period_time),
+                        time: formatTimeRange(period.period_time),
+                        venue: period.venue_name,
+                        venue_id: period.venue_id
+                    }))
+                };
+            });
+
+            const filteredModules = modulesWithPeriods.filter(module => 
+                module.code.toLowerCase().includes(query) || 
+                module.name.toLowerCase().includes(query) ||
+                module.periods.some(period => 
+                    (period.day && period.day.toLowerCase().includes(query)) || 
+                    (period.time && period.time.toLowerCase().includes(query)) || 
+                    (period.venue && period.venue.toLowerCase().includes(query))
+                )
+            );
+            renderModulePeriodsTable(filteredModules);
+        });
     }
 
     if (searchInput) {
         searchInput.addEventListener('input', searchModulePeriods);
     }
 
-    renderModulePeriodsTable(allModulesWithPeriods);
+    // Initial load
+    fetchData();
 
     // ======= Edit Module Period Page Logic =======
     const editPeriodForm = document.getElementById('edit-period-form');
     const periodsContainer = document.getElementById('periods-container');
     const addPeriodBtn = document.getElementById('add-period-btn');
+    const moduleCodeInput = document.getElementById('module-code');
+    const moduleNameInput = document.getElementById('module-name');
+    
     let periodCounter = document.querySelectorAll('.period-entry').length;
+    let currentModuleCode = '';
+    let currentModule = null;
+    let existingPeriods = [];
+    let availableVenues = [];
 
     const daysOfTheWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const demoVenues = ['Room 101', 'Room 102', 'Room 103', 'Lab A', 'Lab B', 'Auditorium'];
 
-    function createPeriodTemplate(count, day = '', startTime = '', endTime = '', venue = '') {
+    // Load module and period data when page loads
+    async function loadModuleData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentModuleCode = urlParams.get('code');
+        
+        if (!currentModuleCode) {
+            alert('No module code provided');
+            window.location.href = 'period.html';
+            return;
+        }
+
+        try {
+            // Fetch module, periods, and venues data
+            const [modulesResponse, periodsResponse, venuesResponse] = await Promise.all([
+                fetch('/api/modules'),
+                fetch('/api/periods'),
+                fetch('/api/venues')
+            ]);
+
+            if (!modulesResponse.ok || !periodsResponse.ok || !venuesResponse.ok) {
+                throw new Error('Failed to fetch data');
+            }
+
+            const modules = await modulesResponse.json();
+            const periods = await periodsResponse.json();
+            availableVenues = await venuesResponse.json();
+
+            // Find current module
+            currentModule = modules.find(m => m.code === currentModuleCode);
+            if (!currentModule) {
+                alert('Module not found');
+                window.location.href = 'period.html';
+                return;
+            }
+
+            // Update module info in form
+            if (moduleCodeInput) moduleCodeInput.value = currentModule.code;
+            if (moduleNameInput) moduleNameInput.value = currentModule.name;
+
+            // Get existing periods for this module
+            existingPeriods = periods.filter(period => 
+                period.module_codes && period.module_codes.includes(currentModuleCode)
+            );
+
+            // Load existing periods into form
+            loadExistingPeriods();
+
+        } catch (error) {
+            console.error('Error loading module data:', error);
+            alert('Error loading module data. Please try again.');
+        }
+    }
+
+    // Load existing periods into the form
+    function loadExistingPeriods() {
+        if (existingPeriods.length === 0) {
+            // No existing periods, keep the default period entry
+            populateSelects();
+            return;
+        }
+
+        // Clear existing period entries
+        const existingEntries = document.querySelectorAll('.period-entry');
+        existingEntries.forEach(entry => entry.remove());
+
+        // Add period entries for existing periods
+        existingPeriods.forEach((period, index) => {
+            const periodDate = new Date(period.period_time);
+            const day = daysOfTheWeek[periodDate.getDay()];
+            const startTime = periodDate.toTimeString().substring(0, 5);
+            const endTime = new Date(periodDate.getTime() + 105 * 60000).toTimeString().substring(0, 5);
+            
+            addPeriodEntry(index + 1, day, startTime, endTime, period.venue_id);
+        });
+
+        periodCounter = existingPeriods.length;
+        populateSelects();
+    }
+
+    // Initialize module data when page loads
+    if (editPeriodForm) {
+        loadModuleData();
+    }
+
+    function createPeriodTemplate(count, day = '', startTime = '', endTime = '', venueId = '') {
         const periodDiv = document.createElement('div');
         periodDiv.className = 'period-entry';
         periodDiv.id = `period-entry-${count}`;
@@ -132,6 +315,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return periodDiv;
     }
 
+    // Helper function to add period entry with data
+    function addPeriodEntry(count, day = '', startTime = '', endTime = '', venueId = '') {
+        const newPeriodElement = createPeriodTemplate(count, day, startTime, endTime, venueId);
+        const addBtnContainer = document.querySelector('.add-period-btn-container');
+        if (addBtnContainer) {
+            periodsContainer.insertBefore(newPeriodElement, addBtnContainer);
+        } else {
+            periodsContainer.appendChild(newPeriodElement);
+        }
+    }
+
     function populateSelects() {
         const daySelects = document.querySelectorAll('.period-day-select');
         daySelects.forEach(select => {
@@ -148,13 +342,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const venueSelects = document.querySelectorAll('.period-venue-select');
         venueSelects.forEach(select => {
-            const selectedVenue = select.value;
+            const selectedVenueId = select.value;
             select.innerHTML = '<option value="">Select a Venue</option>';
-            demoVenues.forEach(venue => {
+            availableVenues.forEach(venue => {
                 const option = document.createElement('option');
-                option.value = venue;
-                option.textContent = venue;
-                if (venue === selectedVenue) option.selected = true;
+                option.value = venue.id;
+                option.textContent = `${venue.name} (${venue.block}, ${venue.campus})`;
+                if (venue.id == selectedVenueId) option.selected = true;
                 select.appendChild(option);
             });
         });
@@ -162,13 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addPeriod() {
         periodCounter++;
-        const newPeriodElement = createPeriodTemplate(periodCounter);
-        const addBtnContainer = document.querySelector('.add-period-btn-container');
-        if (addBtnContainer) {
-            periodsContainer.insertBefore(newPeriodElement, addBtnContainer);
-        } else {
-            periodsContainer.appendChild(newPeriodElement);
-        }
+        addPeriodEntry(periodCounter);
         populateSelects();
     }
 
@@ -235,15 +423,82 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (editPeriodForm) {
-        editPeriodForm.addEventListener('submit', function(event) {
+        editPeriodForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
             if (!checkForConflicts()) {
                 return;
             }
 
-            alert('Form submitted successfully!');
-            window.location.href = 'period.html';  // Redirect after successful save
+            try {
+                // Get all period entries from the form
+                const periodEntries = document.querySelectorAll('.period-entry');
+                const periods = [];
+
+                for (let i = 0; i < periodEntries.length; i++) {
+                    const entry = periodEntries[i];
+                    const day = entry.querySelector('.period-day-select').value;
+                    const startTime = entry.querySelector('input[type="time"][name^="time-start"]').value;
+                    const endTime = entry.querySelector('input[type="time"][name^="time-end"]').value;
+                    const venueId = entry.querySelector('.period-venue-select').value;
+
+                    if (day && startTime && endTime && venueId) {
+                        // Create datetime string for the period
+                        const dayIndex = daysOfTheWeek.indexOf(day);
+                        const [hours, minutes] = startTime.split(':').map(Number);
+                        
+                        // Create a date for this week (Monday = 1, Sunday = 0)
+                        const today = new Date();
+                        const currentDay = today.getDay();
+                        const daysUntilTarget = (dayIndex === 0 ? 7 : dayIndex) - currentDay;
+                        const targetDate = new Date(today);
+                        targetDate.setDate(today.getDate() + daysUntilTarget);
+                        targetDate.setHours(hours, minutes, 0, 0);
+                        
+                        const periodId = `${currentModuleCode}-${day}-${startTime.replace(':', '')}`;
+                        
+                        periods.push({
+                            period_id: periodId,
+                            class_register: `${currentModuleCode}-2-${new Date().getFullYear()}`, // Default register ID
+                            period_time: targetDate.toISOString(),
+                            period_venue_id: parseInt(venueId)
+                        });
+                    }
+                }
+
+                // Delete existing periods for this module first
+                for (const existingPeriod of existingPeriods) {
+                    try {
+                        await fetch(`/api/periods/${existingPeriod.period_id}`, {
+                            method: 'DELETE'
+                        });
+                    } catch (error) {
+                        console.warn('Could not delete existing period:', error);
+                    }
+                }
+
+                // Add new periods
+                for (const period of periods) {
+                    const response = await fetch('/api/periods', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(period)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to save period');
+                    }
+                }
+
+                alert('Periods saved successfully!');
+                window.location.href = 'period.html';
+            } catch (error) {
+                console.error('Error saving periods:', error);
+                alert(`Error saving periods: ${error.message}`);
+            }
         });
     }
 
