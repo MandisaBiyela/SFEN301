@@ -533,7 +533,8 @@ def add_period():
         data = request.get_json()
         period_id = data.get('period_id')
         class_register = data.get('class_register')
-        period_time = data.get('period_time')
+        period_start_time = data.get('period_start_time')
+        period_end_time = data.get('period_end_time')
         period_venue_id = data.get('period_venue_id')
 
         # Validate required fields
@@ -544,10 +545,6 @@ def add_period():
         if Class_Period.query.filter_by(period_id=period_id).first():
             return jsonify({'error': f'Period with ID {period_id} already exists'}), 409
 
-        # Verify class register exists
-        if not Class_Register.query.filter_by(register_id=class_register).first():
-            return jsonify({'error': f'Class register {class_register} does not exist'}), 400
-
         # Verify venue exists
         if not Venue.query.filter_by(id=period_venue_id).first():
             return jsonify({'error': f'Venue with ID {period_venue_id} does not exist'}), 400
@@ -555,7 +552,8 @@ def add_period():
         new_period = Class_Period(
             period_id=period_id,
             class_register=class_register,
-            period_time=period_time or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            period_start_time=period_start_time,
+            period_end_time=period_end_time,
             period_venue_id=period_venue_id
         )
         
@@ -814,25 +812,23 @@ def add_student():
                     db.session.rollback()
                     return jsonify({'error': f'Module {code} does not exist'}), 400
             
-            # Create a single registration record with all modules
-            semester = '2'
-            # Create a unique register ID
-            register_id = f"{student_number}-{semester}-{datetime.now().strftime('%Y')}"
-            
-            # Check if register_id already exists
-            if Class_Register.query.filter_by(register_id=register_id).first():
-                register_id = f"{student_number}-{semester}-{datetime.now().strftime('%Y')}-{datetime.now().strftime('%H%M%S')}"
-            
-            # Store all module codes as comma-separated string
-            modules_string = ','.join(module_codes)
-            
-            new_register = Class_Register(
-                student_number=student_number,
-                register_id=register_id,
-                subject_code=modules_string,  # Store all modules as comma-separated
-                semester=semester
-            )
-            db.session.add(new_register)
+                # Create a single registration record
+                semester = '2'
+                # Create a unique register ID
+                register_id = f"{code}-{semester}-{datetime.now().strftime('%Y')}"
+                
+                # Check if register_id already exists
+                location: Class_Register = Class_Register.query.filter_by(register_id=register_id).first()
+                if location.student_number == student_number:
+                    continue
+                
+                new_register = Class_Register(
+                    student_number=student_number,
+                    register_id=register_id,
+                    subject_code=code,
+                    semester=semester
+                )
+                db.session.add(new_register)
 
         db.session.commit()
         return jsonify({'message': 'Student added successfully'}), 201

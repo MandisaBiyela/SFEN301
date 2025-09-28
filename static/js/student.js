@@ -32,7 +32,6 @@ async function registerFace(studentNumber, imageDataUrl) {
 }
 
 // --- Global UI & Navigation ---
-
 function showStatusMessage(message, type = 'success') {
     const container = document.getElementById('status-message-container');
     if (container) {
@@ -140,7 +139,6 @@ async function initStudentListPage() {
 
 
 // --- Add/Edit Page Common Logic ---
-
 let videoStream;
 let faceIdImageUrl = null; // Stores Base64 image data URL
 

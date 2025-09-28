@@ -97,7 +97,8 @@ class Class_Period(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     period_id = db.Column(db.String(50), unique=True, nullable=False)
     class_register = db.Column(db.String(50), db.ForeignKey('class_register.register_id'), nullable=False)
-    period_time = db.Column(db.String(100), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    period_start_time = db.Column(db.String(100), nullable=False)
+    period_end_time = db.Column(db.String(100), nullable=False)
     period_venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
 
     # Relationships

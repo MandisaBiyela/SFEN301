@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     periods: modulePeriods.map(period => ({
                         id: period.id,
                         period_id: period.period_id,
-                        day: extractDayFromTime(period.period_time),
-                        time: formatTimeRange(period.period_time),
+                        day: extractDayFromTime(period.period_start_time),
+                        time: formatTimeRange(period.period_start_time, period.period_end_time),
                         venue: period.venue_name,
                         venue_id: period.venue_id
                     }))
@@ -90,11 +90,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Helper function to format time range
-    function formatTimeRange(timeString) {
-        if (!timeString) return 'Unknown';
-        const date = new Date(timeString);
-        const startTime = date.toTimeString().substring(0, 5);
-        const endTime = new Date(date.getTime() + 105 * 60000).toTimeString().substring(0, 5); // Add 1h45m
+    function formatTimeRange(startTimeString, endTimeString) {
+        if (!startTimeString) return 'Unknown';
+        const startDate = new Date(startTimeString);
+        const endDate = new Date(endTimeString);
+        const startTime = startDate.toTimeString().substring(0, 5);
+        const endTime = endDate.toTimeString().substring(0, 5);
         return `${startTime} - ${endTime}`;
     }
 
@@ -155,8 +156,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     periods: modulePeriods.map(period => ({
                         id: period.id,
                         period_id: period.period_id,
-                        day: extractDayFromTime(period.period_time),
-                        time: formatTimeRange(period.period_time),
+                        day: extractDayFromTime(period.period_start_time),
+                        time: formatTimeRange(period.period_start_time, period.period_end_time),
                         venue: period.venue_name,
                         venue_id: period.venue_id
                     }))
@@ -265,11 +266,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Add period entries for existing periods
         existingPeriods.forEach((period, index) => {
-            const periodDate = new Date(period.period_time);
-            const day = daysOfTheWeek[periodDate.getDay()];
-            const startTime = periodDate.toTimeString().substring(0, 5);
-            const endTime = new Date(periodDate.getTime() + 105 * 60000).toTimeString().substring(0, 5);
-            
+            const periodStartDate = new Date(period.period_start_time);
+            const day = daysOfTheWeek[periodStartDate.getDay()];
+            const startTime = periodStartDate.toTimeString().substring(0, 5);
+            const endTime = new Date(period.period_end_time).toTimeString().substring(0, 5);
+
             addPeriodEntry(index + 1, day, startTime, endTime, period.venue_id);
         });
 
@@ -445,22 +446,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (day && startTime && endTime && venueId) {
                         // Create datetime string for the period
                         const dayIndex = daysOfTheWeek.indexOf(day);
-                        const [hours, minutes] = startTime.split(':').map(Number);
-                        
+                        const [startHours, startMinutes] = startTime.split(':').map(Number);
+                        const [endHours, endMinutes] = endTime.split(':').map(Number);
+
                         // Create a date for this week (Monday = 1, Sunday = 0)
                         const today = new Date();
                         const currentDay = today.getDay();
                         const daysUntilTarget = (dayIndex === 0 ? 7 : dayIndex) - currentDay;
-                        const targetDate = new Date(today);
-                        targetDate.setDate(today.getDate() + daysUntilTarget);
-                        targetDate.setHours(hours, minutes, 0, 0);
-                        
+                        const targetStartDate = new Date(today);
+                        targetStartDate.setDate(today.getDate() + daysUntilTarget);
+                        targetStartDate.setHours(startHours, startMinutes, 0, 0);
+
+                        targetEndDate.setDate(targetStartDate.getDate());
+                        targetEndDate.setHours(endHours, endMinutes, 0, 0);
+
                         const periodId = `${currentModuleCode}-${day}-${startTime.replace(':', '')}`;
                         
                         periods.push({
                             period_id: periodId,
                             class_register: `${currentModuleCode}-2-${new Date().getFullYear()}`, // Default register ID
-                            period_time: targetDate.toISOString(),
+                            period_start_time: targetStartDate.toISOString(),
+                            period_end_time: targetEndDate.toISOString(),
                             period_venue_id: parseInt(venueId)
                         });
                     }
