@@ -93,8 +93,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Group periods by time and create unique time slots
         const timeSlots = new Set();
         modulePeriods.forEach(period => {
-            const time = new Date(period.period_time).toTimeString().substring(0, 5);
-            timeSlots.add(time);
+            const startTime = new Date(period.period_start_time).toTimeString().substring(0, 5);
+            timeSlots.add(startTime);
         });
 
         timeSlots.forEach(time => {

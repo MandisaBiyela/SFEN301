@@ -502,7 +502,7 @@ def get_periods():
     API endpoint to get all class periods as JSON
     """
     try:
-        periods = Class_Period.query.order_by(Class_Period.period_time).all()
+        periods = Class_Period.query.order_by(Class_Period.period_start_time).all()
         period_list = []
         for p in periods:
             # Get register and venue information
@@ -513,7 +513,8 @@ def get_periods():
                 'id': p.id,
                 'period_id': p.period_id,
                 'class_register': p.class_register,
-                'period_time': p.period_time,
+                'period_start_time': p.period_start_time,
+                'period_end_time': p.period_end_time,
                 'venue_id': p.period_venue_id,
                 'venue_name': venue.venue_name if venue else 'Unknown',
                 'venue_block': venue.venue_block if venue else '',
@@ -587,6 +588,236 @@ def delete_period(period_id):
         db.session.rollback()
         print(f"Error deleting period: {e}")
         return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+
+# --- REGISTER API ENDPOINTS ---
+
+@app.route('/api/modules/<module_code>/students', methods=['GET'])
+def get_students_by_module(module_code):
+    """
+    API endpoint to get all students registered for a specific module
+    """
+    try:
+        # First verify the module exists
+        module = Module.query.filter_by(module_code=module_code).first()
+        if not module:
+            return jsonify({'error': 'Module not found'}), 404
+
+        # Find all class registers that contain this module code
+        # Since subject_code can contain comma-separated values, we need to handle that
+        class_registers = Class_Register.query.all()
+        student_numbers = []
+        
+        for register in class_registers:
+            if register.subject_code:
+                # Split comma-separated module codes and check if our module is in there
+                module_codes = [code.strip() for code in register.subject_code.split(',')]
+                if module_code in module_codes:
+                    student_numbers.append(register.student_number)
+        
+        # Get unique student numbers (in case a student appears in multiple registers)
+        unique_student_numbers = list(set(student_numbers))
+        
+        # Fetch student details for these student numbers
+        students = Student.query.filter(Student.student_number.in_(unique_student_numbers)).order_by(Student.student_surname, Student.student_name).all()
+        
+        # Return student data
+        return jsonify([{
+            'student_number': s.student_number,
+            'student_name': s.student_name,
+            'student_surname': s.student_surname,
+            'student_email': s.student_email,
+            'has_face_id': s.embedding is not None
+        } for s in students])
+        
+    except Exception as e:
+        print(f"Error fetching students for module {module_code}: {e}")
+        return jsonify({'error': 'Error fetching student data'}), 500
+
+@app.route('/api/registers', methods=['GET'])
+def get_all_registers():
+    """
+    API endpoint to get all class registers with student and module information
+    """
+    try:
+        registers = Class_Register.query.order_by(Class_Register.register_id).all()
+        register_list = []
+        
+        for register in registers:
+            # Get student information
+            student = Student.query.filter_by(student_number=register.student_number).first()
+            
+            # Parse module codes (handle comma-separated values)
+            module_codes = []
+            module_names = []
+            if register.subject_code:
+                codes = [code.strip() for code in register.subject_code.split(',')]
+                for code in codes:
+                    module = Module.query.filter_by(module_code=code).first()
+                    if module:
+                        module_codes.append(code)
+                        module_names.append(module.module_name)
+                    else:
+                        module_codes.append(code)
+                        module_names.append(f"Unknown Module ({code})")
+            
+            register_list.append({
+                'id': register.id,
+                'register_id': register.register_id,
+                'student_number': register.student_number,
+                'student_name': f"{student.student_name} {student.student_surname}" if student else "Unknown Student",
+                'module_codes': module_codes,
+                'module_names': module_names,
+                'semester': register.semester,
+                'year': register.year
+            })
+        
+        return jsonify(register_list)
+        
+    except Exception as e:
+        print(f"Error fetching registers: {e}")
+        return jsonify({'error': 'Error fetching register data'}), 500
+
+@app.route('/api/modules/<module_code>/register/summary', methods=['GET'])
+def get_module_register_summary(module_code):
+    """
+    API endpoint to get a summary of a module's register including stats
+    """
+    try:
+        # Verify module exists
+        module = Module.query.filter_by(module_code=module_code).first()
+        if not module:
+            return jsonify({'error': 'Module not found'}), 404
+
+        # Get lecturer information
+        lecturer = Lecturer.query.filter_by(lecturer_number=module.lecturer_number).first()
+        
+        # Count students registered for this module
+        class_registers = Class_Register.query.all()
+        total_students = 0
+        students_with_face_id = 0
+        
+        for register in class_registers:
+            if register.subject_code:
+                module_codes = [code.strip() for code in register.subject_code.split(',')]
+                if module_code in module_codes:
+                    total_students += 1
+                    student = Student.query.filter_by(student_number=register.student_number).first()
+                    if student and student.embedding:
+                        students_with_face_id += 1
+        
+        # Get recent attendance for this module (if any class periods exist)
+        recent_attendance = []
+        class_periods = Class_Period.query.join(Class_Register).filter(
+            Class_Register.subject_code.contains(module_code)
+        ).order_by(Class_Period.period_start_time.desc()).limit(5).all()
+        
+        for period in class_periods:
+            attendance_count = Attendance.query.filter_by(class_period_id=period.id).count()
+            recent_attendance.append({
+                'period_id': period.period_id,
+                'date': period.period_start_time,
+                'attendance_count': attendance_count
+            })
+        
+        return jsonify({
+            'module': {
+                'code': module.module_code,
+                'name': module.module_name,
+                'lecturer_name': f"{lecturer.name} {lecturer.surname}" if lecturer else "Unknown Lecturer"
+            },
+            'statistics': {
+                'total_students': total_students,
+                'students_with_face_id': students_with_face_id,
+                'students_without_face_id': total_students - students_with_face_id
+            },
+            'recent_attendance': recent_attendance
+        })
+        
+    except Exception as e:
+        print(f"Error fetching module register summary: {e}")
+        return jsonify({'error': 'Error fetching summary data'}), 500
+
+# --- CLASS REGISTER MANAGEMENT ENDPOINTS ---
+
+@app.route('/api/registers', methods=['POST'])
+def add_class_register():
+    """
+    API endpoint to add a new class register entry
+    """
+    try:
+        data = request.get_json()
+        student_number = data.get('student_number')
+        module_codes = data.get('module_codes', [])  # List of module codes
+        semester = data.get('semester', '1')
+        
+        if not student_number or not module_codes:
+            return jsonify({'error': 'Student number and module codes are required'}), 400
+        
+        # Verify student exists
+        student = Student.query.filter_by(student_number=student_number).first()
+        if not student:
+            return jsonify({'error': f'Student {student_number} not found'}), 404
+        
+        # Verify all modules exist
+        for code in module_codes:
+            module = Module.query.filter_by(module_code=code).first()
+            if not module:
+                return jsonify({'error': f'Module {code} not found'}), 404
+        
+        # Create register ID
+        year = datetime.now().strftime('%Y')
+        register_id = f"{student_number}-{semester}-{year}"
+        
+        # Check if register already exists
+        existing_register = Class_Register.query.filter_by(register_id=register_id).first()
+        if existing_register:
+            # Update existing register
+            existing_register.subject_code = ','.join(module_codes)
+            message = 'Class register updated successfully'
+        else:
+            # Create new register
+            new_register = Class_Register(
+                student_number=student_number,
+                register_id=register_id,
+                subject_code=','.join(module_codes),
+                semester=semester,
+                year=year
+            )
+            db.session.add(new_register)
+            message = 'Class register created successfully'
+        
+        db.session.commit()
+        return jsonify({'message': message}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding class register: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
+
+@app.route('/api/registers/<register_id>', methods=['DELETE'])
+def delete_class_register(register_id):
+    """
+    API endpoint to delete a class register
+    """
+    try:
+        register = Class_Register.query.filter_by(register_id=register_id).first()
+        if not register:
+            return jsonify({'error': 'Register not found'}), 404
+        
+        # Check if there are any class periods using this register
+        class_periods = Class_Period.query.filter_by(class_register=register_id).count()
+        if class_periods > 0:
+            return jsonify({'error': f'Cannot delete register. It is being used in {class_periods} class period(s)'}), 400
+        
+        db.session.delete(register)
+        db.session.commit()
+        return jsonify({'message': 'Register deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting register: {e}")
+        return jsonify({'error': 'Database error occurred'}), 500
 
 # --- ATTENDANCE API ENDPOINTS ---
 
@@ -750,7 +981,7 @@ def get_student(student_number):
         if not student:
             return jsonify({'error': 'Student not found'}), 404
 
-        registrations = Class_Register.query.filter_by(student_number=student.student_number).all()
+        registrations = Class_Register.query.filter_by(student_number=student_number).all()
         module_codes = [reg.module_code for reg in registrations]
 
         return jsonify({
@@ -818,7 +1049,7 @@ def add_student():
                 register_id = f"{code}-{semester}-{datetime.now().strftime('%Y')}"
                 
                 # Check if register_id already exists
-                location: Class_Register = Class_Register.query.filter_by(register_id=register_id).first()
+                location = Class_Register.query.filter_by(register_id=register_id).first()
                 if location.student_number == student_number:
                     continue
                 

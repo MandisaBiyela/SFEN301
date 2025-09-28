@@ -106,7 +106,7 @@ class Class_Period(db.Model):
     venue = db.relationship('Venue', backref=db.backref('class_periods', lazy=True))
 
     def __repr__(self):
-        return f'<Class Period {self.period_id} at {self.period_time}>'
+        return f'<Class Period {self.period_id} at {self.period_start_time} to {self.period_end_time}>'
 
 class Venue(db.Model):
     """

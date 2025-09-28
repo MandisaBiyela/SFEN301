@@ -457,6 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         targetStartDate.setDate(today.getDate() + daysUntilTarget);
                         targetStartDate.setHours(startHours, startMinutes, 0, 0);
 
+                        const targetEndDate = new Date(targetStartDate);
                         targetEndDate.setDate(targetStartDate.getDate());
                         targetEndDate.setHours(endHours, endMinutes, 0, 0);
 
