@@ -1049,9 +1049,9 @@ def add_student():
                 register_id = f"{code}-{semester}-{datetime.now().strftime('%Y')}"
                 
                 # Check if register_id already exists
-                location = Class_Register.query.filter_by(register_id=register_id).first()
-                if location.student_number == student_number:
-                    continue
+                # location = Class_Register.query.filter_by(register_id=register_id).first()
+                # if location.student_number == student_number:
+                #     continue
                 
                 new_register = Class_Register(
                     student_number=student_number,

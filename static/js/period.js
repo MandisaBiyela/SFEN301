@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         targetEndDate.setDate(targetStartDate.getDate());
                         targetEndDate.setHours(endHours, endMinutes, 0, 0);
 
-                        const periodId = `${currentModuleCode}-${day}-${startTime.replace(':', '')}`;
+                        const periodId = `${currentModuleCode}-${day}-${targetStartDate.getHours()}${targetStartDate.getMinutes()}`;
                         
                         periods.push({
                             period_id: periodId,

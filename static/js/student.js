@@ -11,7 +11,6 @@ async function fetchStudent(studentNumber) {
 }
 
 async function fetchAllModules() {
-    // Assuming you have an endpoint that returns all possible modules
     const response = await fetch('/api/modules');
     if (!response.ok) throw new Error('Failed to fetch modules');
     return response.json();
