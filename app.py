@@ -9,7 +9,6 @@ from models import *
 
 app = Flask(__name__)
 
-
 # --- Database Configuration ---
 # Set the path for the SQLite database file
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -90,7 +89,6 @@ def new_password():
 @app.route('/admin_dashboard.html')
 def admin_dashboard():
     return render_template('admin_dashboard.html')
-
 
 @app.route('/profile.html')
 def profile():

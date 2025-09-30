@@ -466,8 +466,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         periods.push({
                             period_id: periodId,
                             class_register: `${currentModuleCode}-2-${new Date().getFullYear()}`, // Default register ID
-                            period_start_time: targetStartDate.toISOString(),
-                            period_end_time: targetEndDate.toISOString(),
+                            period_start_time: startTime, //targetStartDate.toISOString(),
+                            period_end_time: endTime, //targetEndDate.toISOString(),
                             period_venue_id: parseInt(venueId)
                         });
                     }

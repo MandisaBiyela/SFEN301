@@ -166,7 +166,7 @@ def run_attendance_system():
             break
 
         frame_count += 1
-        if frame_count % 10 != 0:  # process 1 in 10 frames
+        if frame_count % 36 != 0:  # process 1 in 36 frames
             cv2.imshow("Attendance System", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -182,7 +182,7 @@ def run_attendance_system():
             print("[ERROR] 'students' table not found. Please run the Flask app first.")
             break
 
-        for user_id,  name, surname, image_path, embedding_blob in users:
+        for user_id, name, surname, image_path, embedding_blob in users:
             full_name = f"{name} {surname}"
 
             if full_name in recognized_today or not embedding_blob:
