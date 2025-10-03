@@ -42,8 +42,15 @@
                     <input type="text" id="block" name="block" placeholder="e.g., Block L" required>
                 </div>
                 <div class="form-group">
-                    <label for="campus">Campus</label>
-                    <input type="text" id="campus" name="campus" placeholder="e.g., Steve Biko Campus" required>
+                 <label for="campus">Campus</label>
+                 <select id="campus" name="campus" required>
+                 <option value="">-- Select Campus --</option>
+                  <option value="Steve Biko Campus">Steve Biko Campus</option>
+                 <option value="ML Sultan Campus">ML Sultan Campus</option>
+                 <option value="Ritson Campus">Ritson Campus</option>
+                 <option value="Indumiso Campus">Indumiso Campus</option>
+                  <option value="Midlands Campus">Midlands Campus</option>
+                 </select>
                 </div>
                 <button type="submit" class="submit-btn">Add Venue</button>
             </form>
