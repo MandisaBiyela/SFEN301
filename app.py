@@ -986,6 +986,15 @@ def delete_attendance(attendance_id):
 
 # --- STUDENT API ENDPOINTS ---
 
+@app.route('/api/students/check/<student_number>', methods=['GET'])
+def check_student_exists(student_number):
+    """ API to check if a student number already exists. """
+    try:
+        exists = Student.query.filter_by(student_number=student_number).first() is not None
+        return jsonify({'exists': exists}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/students', methods=['GET'])
 def get_students():
     """ API to get a list of all students and their registered modules. """
