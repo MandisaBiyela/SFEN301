@@ -216,11 +216,24 @@ def run_attendance_system():
 
     print("[INFO] System started. Press 'q' to quit.")
 
-    for active_period in active_periods:
-        print(active_period)
-
+    # for active_period in active_periods:
+    #     print(active_period)
     frame_count = 0
+
+    class_period_id = active_periods[1]
+    today_date = datetime.now().strftime("%Y-%m-%d")
     recognized_today = set()
+    # Load already recognized students for the active period from DB
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT name, user_id FROM attendance
+        WHERE class_period_id = ? AND date = ? AND status = 'Present'
+    """, (class_period_id, today_date))
+    
+    # Use user_id for the expected_register check, but name for display
+    for name, user_id in cursor.fetchall():
+        recognized_today.add(name)
+    
     expected_register = []
     try:
         query = '''
@@ -238,7 +251,11 @@ def run_attendance_system():
         print(f"[ERROR] Database operation failed: {e}")
 
     print("\n--- Live Attendance System ---")
-    
+
+    # Remove recognized students from the expected list
+    expected_register = [s for s in expected_register if s not in recognized_today]
+    print(f"[INFO] Already recognized students for period {class_period_id}: {list(recognized_today)}")
+
     full_list = len(expected_register)
     while len(recognized_today) < full_list:
         ret, frame = cap.read()
@@ -255,7 +272,6 @@ def run_attendance_system():
 
         cv2.imwrite(TEMP_FRAME_PATH, frame)
         frame_embedding = compute_embedding(TEMP_FRAME_PATH)
-        
     
         for expected in expected_register:
             print(expected)
@@ -285,16 +301,17 @@ def run_attendance_system():
             similarity = cosine_similarity(frame_embedding, db_embedding)
 
             if similarity > 0.75:  # threshold
-                now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                print(f"✅ {full_name} recognized at {now_str}")
+                now_time = datetime.now().strftime("%H:%M:%S")
+                print(f"✅ {full_name} recognized at {now_time}")
 
+                # 2. Update INSERT query to include the 'date' column
                 cursor.execute("""
-                    INSERT INTO attendance (user_id, class_period_id, name, time, status)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (student_number, active_periods[1], full_name, now_str, "Present"))
+                    INSERT INTO attendance (user_id, class_period_id, name, time, date, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (student_number, class_period_id, full_name, now_time, today_date, "Present")) # <-- today_date is added
                 conn.commit()
 
-                recognized_today.add(full_name)
+                recognized_today.add(full_name) # Keep for memory during the current session
                 cv2.putText(frame, f"{full_name} - Present", (20, 40),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                 expected_register.remove(expected)

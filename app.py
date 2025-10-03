@@ -753,6 +753,23 @@ def get_module_register_summary(module_code):
         return jsonify({'error': 'Error fetching summary data'}), 500
 
 # --- CLASS REGISTER MANAGEMENT ENDPOINTS ---
+@app.route('/api/register_students', methods=['GET'])
+def get_student_register():
+    """
+    Fetches the mapping of students to modules (class registers).
+    """
+    try:
+        register_entries = Class_Register.query.all()
+        result = []
+        for entry in register_entries:
+            result.append({
+                'student_number': entry.student_number,
+                'register_id': entry.register_id # This is the module code
+            })
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error fetching student register data: {e}")
+        return jsonify({'error': 'Error fetching student register data'}), 500
 
 @app.route('/api/registers', methods=['POST'])
 def add_class_register():
@@ -845,7 +862,8 @@ def get_attendance():
         student_number = request.args.get('student_number')
         class_period_id = request.args.get('class_period_id')
         module_code = request.args.get('module_code')
-        date = request.args.get('date')
+        period_id = request.args.get('period_id')
+        date_str = request.args.get('date') # YYYY-MM-DD
         
         query = Attendance.query
         
@@ -854,15 +872,24 @@ def get_attendance():
             query = query.filter_by(user_id=student_number)
         if class_period_id:
             query = query.filter_by(class_period_id=class_period_id)
-        if date:
-            query = query.filter(Attendance.time.like(f'{date}%'))
-        
-        attendance_records = query.order_by(Attendance.time.desc()).all()
+        if module_code or period_id:
+            query = query.join(Class_Period)
+            if period_id and period_id != 'all':
+                # Filter by specific period ID (e.g. MON1000)
+                query = query.filter(Class_Period.period_id == period_id)
+            elif module_code and module_code != 'all':
+                # Filter by module code (which is the class_register ID)
+                query = query.join(Class_Period.register).filter(Class_Register.register_id == module_code)
+
+        # 1. Filter by specific date
+        if date_str:
+            query = query.filter(Attendance.date == date_str)
+    
+        attendance_records = query.order_by(Attendance.date.desc(), Attendance.time.asc()).all()
         
         attendance_list = []
         for a in attendance_records:
             # Get student and period information
-            student = Student.query.filter_by(student_number=a.user_id).first()
             period = Class_Period.query.filter_by(id=a.class_period_id).first() if a.class_period_id else None
             
             attendance_list.append({
@@ -871,9 +898,8 @@ def get_attendance():
                 'class_period_id': a.class_period_id,
                 'name': a.name,
                 'time': a.time,
+                'date': a.date, 
                 'status': a.status,
-                'student_name': f"{student.student_name} {student.student_surname}" if student else 'Unknown',
-                'period_id': period.period_id if period else None,
                 'venue_name': period.venue.venue_name if period and period.venue else None
             })
         
@@ -881,6 +907,7 @@ def get_attendance():
     except Exception as e:
         print(f"Error fetching attendance: {e}")
         return jsonify({'error': 'Error fetching attendance data'}), 500
+
 
 @app.route('/api/attendance', methods=['POST'])
 def add_attendance():

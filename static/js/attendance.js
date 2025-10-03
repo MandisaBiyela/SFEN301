@@ -93,14 +93,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Group periods by time and create unique time slots
         const timeSlots = new Set();
         modulePeriods.forEach(period => {
-            const startTime = new Date(period.period_start_time).toTimeString().substring(0, 5);
+            const startTime = `${period.period_start_time} - ${period.period_end_time}`;
             timeSlots.add(startTime);
         });
 
         timeSlots.forEach(time => {
             const option = document.createElement('option');
             option.value = time;
-            option.textContent = `${time} - ${addMinutes(time, 105)}`; // 1h45m duration
+            option.textContent = `${time}`;
             periodSelect.appendChild(option);
         });
     }

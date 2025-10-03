@@ -36,7 +36,8 @@ class Attendance(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('students.student_number'), nullable=False)
     class_period_id = db.Column(db.Integer, db.ForeignKey('class_period.id'))
     name = db.Column(db.String(100), nullable=False)
-    time = db.Column(db.String(100), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    time = db.Column(db.String(8), nullable=False) # Time of day (HH:MM:SS)
+    date = db.Column(db.String(10), nullable=False) # Date (YYYY-MM-DD) <-- ADDED
     status = db.Column(db.String(50), nullable=False, default='Absence')
 
     # Relationships

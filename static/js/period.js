@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     periods: modulePeriods.map(period => ({
                         id: period.id,
                         period_id: period.period_id,
-                        day: extractDayFromTime(period.period_start_time),
-                        time: formatTimeRange(period.period_start_time, period.period_end_time),
+                        day: period.day_of_week,
+                        time: `${period.period_start_time} - ${period.period_end_time}`,
                         venue: period.venue_name,
                         venue_id: period.venue_id
                     }))
