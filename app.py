@@ -526,6 +526,7 @@ def get_periods():
                 'class_register': p.class_register,
                 'period_start_time': p.period_start_time,
                 'period_end_time': p.period_end_time,
+                'day_of_week': p.day_of_week,
                 'venue_id': p.period_venue_id,
                 'venue_name': venue.venue_name if venue else 'Unknown',
                 'venue_block': venue.venue_block if venue else '',
@@ -547,6 +548,7 @@ def add_period():
         class_register = data.get('class_register')
         period_start_time = data.get('period_start_time')
         period_end_time = data.get('period_end_time')
+        day_of_week = data.get('day_of_week')
         period_venue_id = data.get('period_venue_id')
 
         # Validate required fields
@@ -565,6 +567,7 @@ def add_period():
             period_id=period_id,
             class_register=class_register,
             period_start_time=period_start_time,
+            day_of_week=day_of_week,
             period_end_time=period_end_time,
             period_venue_id=period_venue_id
         )
@@ -993,7 +996,7 @@ def get_student(student_number):
             return jsonify({'error': 'Student not found'}), 404
 
         registrations = Class_Register.query.filter_by(student_number=student_number).all()
-        module_codes = [reg.module_code for reg in registrations]
+        subject_code = [reg.subject_code for reg in registrations]
 
         return jsonify({
             'id': student.id,
@@ -1002,7 +1005,7 @@ def get_student(student_number):
             'surname': student.student_surname,
             'has_face_id': student.embedding is not None,
             'face_id_image_url': student.image_path, # URL to the saved face image
-            'modules': module_codes
+            'modules': subject_code
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

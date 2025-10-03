@@ -46,6 +46,59 @@ def cosine_similarity(vec1, vec2):
     """
     return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
+def is_period_active_now(db_path):
+    """
+    Checks if a class period is currently active based on the day and time.
+    It queries the class_period table using the current day name (e.g., 'Friday') 
+    and the current time in 'HH:MM' format.
+    """
+    now = datetime.now()
+    # Get current day name (e.g., 'Monday', 'Tuesday')
+    day_name = now.strftime('%A')
+    # Get current time in HH:MM format (24-hour)
+    current_time_str = now.strftime('%H:%M')
+
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Query to check if the current day_name matches AND the current time string 
+        # falls between the period_start_time and period_end_time strings.
+        # String comparison of 'HH:MM' works correctly for time.
+        query = """
+            SELECT 
+                class_register,
+                id
+            FROM 
+                class_period 
+            WHERE 
+                day_of_week = ? AND 
+                period_start_time <= ? AND 
+                period_end_time > ?
+        """
+        # Note: We use '>' for period_end_time so the period is not active 
+        # *exactly* at the end time.
+        cursor.execute(query, (day_name, current_time_str, current_time_str))
+        
+        active_period = cursor.fetchone()
+        
+        if active_period:
+            print(f"[INFO] Active period found for register: {active_period[0]}")
+            return active_period
+        else:
+            print(f"[INFO] No active period found for {day_name} at {current_time_str}")
+            return False
+
+    except sqlite3.Error as e:
+        print(f"[ERROR] Database error during period check: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+
 # -----------------------------
 # User Registration
 # -----------------------------
@@ -144,12 +197,17 @@ def run_attendance_system():
     """
     Runs the live face recognition attendance system.
     """
-    print("\n--- Live Attendance System ---")
 
+    active_periods = is_period_active_now(DB_PATH)
+    # 1. NEW CHECK: Only proceed if there is an active period
+    if not active_periods:
+        print("\n[WARN] Attendance system is not running. No active class period at this time.")
+        # Optional: You could add a loop here to check again after a delay, 
+        # but for simplicity, we exit immediately.
+        return
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    recognized_today = set()
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
@@ -158,8 +216,31 @@ def run_attendance_system():
 
     print("[INFO] System started. Press 'q' to quit.")
 
+    for active_period in active_periods:
+        print(active_period)
+
     frame_count = 0
-    while True:
+    recognized_today = set()
+    expected_register = []
+    try:
+        query = '''
+                SELECT
+                student_number
+                FROM 
+                class_register 
+                WHERE
+                register_id = ?
+                '''
+        # FIX: Pass as a tuple with a trailing comma
+        cursor.execute(query, (active_periods[0],))
+        expected_register = cursor.fetchall()
+    except sqlite3.OperationalError as e:
+        print(f"[ERROR] Database operation failed: {e}")
+
+    print("\n--- Live Attendance System ---")
+    
+    full_list = len(expected_register)
+    while len(recognized_today) < full_list:
         ret, frame = cap.read()
         if not ret:
             print("⚠️ Webcam not available.")
@@ -174,17 +255,29 @@ def run_attendance_system():
 
         cv2.imwrite(TEMP_FRAME_PATH, frame)
         frame_embedding = compute_embedding(TEMP_FRAME_PATH)
-
-        try:
-            cursor.execute("SELECT id, student_name, student_surname, image_path, embedding FROM students WHERE embedding IS NOT NULL")
-            users = cursor.fetchall()
-        except sqlite3.OperationalError:
-            print("[ERROR] 'students' table not found. Please run the Flask app first.")
-            break
-
-        for user_id, name, surname, image_path, embedding_blob in users:
-            full_name = f"{name} {surname}"
-
+        
+    
+        for expected in expected_register:
+            print(expected)
+            cursor.execute("""
+                           SELECT
+                            student_number,
+                            student_name,
+                            student_surname,
+                            image_path,
+                            embedding
+                           FROM
+                            students
+                           WHERE
+                            embedding IS NOT NULL AND
+                            student_number = ?
+                           """, (expected[0],))  # FIX: expected is a tuple, use expected[0]
+            student = cursor.fetchone()
+            if not student:
+                continue
+                
+            student_number, name, surname, image_path, embedding_blob = student
+            full_name = f'{name} {surname}'
             if full_name in recognized_today or not embedding_blob:
                 continue
 
@@ -196,15 +289,15 @@ def run_attendance_system():
                 print(f"✅ {full_name} recognized at {now_str}")
 
                 cursor.execute("""
-                    INSERT INTO attendance (user_id, name, time, status)
-                    VALUES (?, ?, ?, ?)
-                """, (user_id, full_name, now_str, "Present"))
+                    INSERT INTO attendance (user_id, class_period_id, name, time, status)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (student_number, active_periods[1], full_name, now_str, "Present"))
                 conn.commit()
 
                 recognized_today.add(full_name)
                 cv2.putText(frame, f"{full_name} - Present", (20, 40),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                break
+                expected_register.remove(expected)
 
         cv2.imshow("Attendance System", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -224,7 +317,6 @@ def run_attendance_system():
 def main():
     if not initialize_system():
         return
-
 
     while True:
         print("\n--- Attendance System Menu ---")
