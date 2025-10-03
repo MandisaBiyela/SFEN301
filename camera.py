@@ -225,6 +225,7 @@ def main():
     if not initialize_system():
         return
 
+
     while True:
         print("\n--- Attendance System Menu ---")
         print("1. Register a New User")

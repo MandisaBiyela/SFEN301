@@ -85,6 +85,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (response.ok) {
                     showNotification(result.message, 'success');
+                    // Show the generated lecturer number
+                    const numberDiv = document.getElementById('generated-lecturer-number');
+                    if (numberDiv && result.lecturer && result.lecturer.lecturer_number) {
+                        numberDiv.textContent = `Lecturer Number: ${result.lecturer.lecturer_number}`;
+                        numberDiv.style.display = 'block';
+                    }
                     // Update the lecturer table immediately
                     await updateLecturerTable();
                     // Clear the form
@@ -228,16 +234,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // If on edit lecturer page
     else if (document.getElementById('edit-lecturer-form')) {
-
         const form = document.getElementById('edit-lecturer-form');
         const urlParams = new URLSearchParams(window.location.search);
         const lecturerId = urlParams.get('id');
 
-
         // Populate form with lecturer data
         function populateForm(id) {
             const lecturer = lecturers.find(l => l.lecturer_number == id);
-
             if (lecturer) {
                 document.getElementById('lecturer-number').value = lecturer.lecturer_number;
                 document.getElementById('lecturer-name').value = lecturer.name;
@@ -245,17 +248,49 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('lecturer-email').value = lecturer.email;
             }
         }
-
         if (lecturerId) {
             populateForm(lecturerId);
         }
 
-        // form.addEventListener('submit', function(e) {
-        //     e.preventDefault();
-        //     // Here you could update your lecturers array or send to backend
-        //     // For now just simulate save and redirect
-        //     window.location.href = 'lecturer.html?status=saved';
-        // });
+        // Handle edit form submission via async fetch
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('/lecturer_edit.html', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                const notificationDiv = document.getElementById('edit-notification');
+                if (response.ok) {
+                    if (notificationDiv) {
+                        notificationDiv.textContent = result.message;
+                        notificationDiv.className = 'notification success';
+                        notificationDiv.style.display = 'block';
+                    }
+                    await updateLecturerTable();
+                    // Redirect to lecturer.html after short delay
+                    setTimeout(() => {
+                        window.location.href = 'lecturer.html?status=saved';
+                    }, 1200);
+                } else {
+                    if (notificationDiv) {
+                        notificationDiv.textContent = result.error || 'Error updating lecturer';
+                        notificationDiv.className = 'notification error';
+                        notificationDiv.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                const notificationDiv = document.getElementById('edit-notification');
+                if (notificationDiv) {
+                    notificationDiv.textContent = 'Error updating lecturer. Please try again.';
+                    notificationDiv.className = 'notification error';
+                    notificationDiv.style.display = 'block';
+                }
+                console.error('Error:', error);
+            }
+        });
     }
 
     // If on add lecturer page

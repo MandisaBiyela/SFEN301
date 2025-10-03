@@ -109,22 +109,25 @@ def lecturer_add():
     POST: Processes the form data and saves it.
     """
     if request.method == 'POST':
-        # Get data from the form
-        lecturer_number = request.form.get('lecturer-number')
+        # Get data from the form (no lecturer_number, it's auto-generated)
         name = request.form.get('lecturer-name')
         surname = request.form.get('lecturer-surname')
         email = request.form.get('lecturer-email')
 
         # Basic validation
-        if not all([lecturer_number, name, surname, email]):
+        if not all([name, surname, email]):
             return jsonify({'error': 'All fields are required!'}), 400
 
-        # Check if lecturer or email already exists
-        if Lecturer.query.filter_by(lecturer_number=lecturer_number).first():
-            return jsonify({'error': 'A lecturer with this number already exists.'}), 400
-        
-        if Lecturer.query.filter_by(email=email).first():
-            return jsonify({'error': 'This email address is already registered.'}), 400
+        # Generate a unique lecturer_number (e.g., use max id + 1 or UUID)
+        # Here, we'll use a simple increment based on the max id
+        last_lecturer = Lecturer.query.order_by(Lecturer.id.desc()).first()
+        next_number = 1000 if not last_lecturer else int(last_lecturer.lecturer_number) + 1 if last_lecturer.lecturer_number.isdigit() else last_lecturer.id + 1
+        lecturer_number = str(next_number)
+
+        # Use model validation for uniqueness
+        errors = Lecturer.validate_unique(lecturer_number, email)
+        if errors:
+            return jsonify({'error': ' '.join(errors)}), 400
 
         # Create a new Lecturer object
         new_lecturer = Lecturer(
@@ -177,13 +180,23 @@ def lecturer_edit():
             lecturer_to_update.surname = surname
             lecturer_to_update.email = email
 
-            # Commit the changes to the database
-            db.session.commit()
-            print("Record updated successfully!")
-            flash(f"Record for {lecturer_number} updated successfully!")
-            # return render_template('lecturer.html')
+            try:
+                db.session.commit()
+                return jsonify({
+                    'message': f'Record for {lecturer_number} updated successfully!',
+                    'lecturer': {
+                        'lecturer_number': lecturer_number,
+                        'name': name,
+                        'surname': surname,
+                        'email': email
+                    }
+                }), 200
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating lecturer: {e}")
+                return jsonify({'error': 'An error occurred while updating the lecturer.'}), 500
         else:
-            print("Lecturer not found.")
+            return jsonify({'error': 'Lecturer not found.'}), 404
 
     return render_template('lecturer_edit.html')
 
