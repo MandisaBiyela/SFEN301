@@ -377,7 +377,9 @@ async function initAddStudentPage() {
 
         // Disable submit button during processing
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Adding Student...';
+        // Add spinner
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.innerHTML = '<span class="button-spinner"></span>Adding Student...';
 
         try {
             const studentData = {
@@ -423,7 +425,7 @@ async function initAddStudentPage() {
         } finally {
             // Re-enable submit button
             submitBtn.disabled = !isStudentNumberValid;
-            submitBtn.textContent = 'Add Student';
+            submitBtn.innerHTML = originalBtnText;
         }
     });
 }
@@ -458,6 +460,7 @@ async function initEditStudentPage() {
     const webcamEl = document.getElementById('webcam');
     const overlayEl = document.getElementById('camera-overlay');
     const buttonsEl = document.getElementById('face-id-buttons');
+    const submitBtn = form.querySelector('.submit-btn');
 
     if (student.has_face_id && student.face_id_image_url) {
         overlayEl.style.display = 'none';
@@ -476,6 +479,11 @@ async function initEditStudentPage() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        // Add spinner to button
+        submitBtn.disabled = true;
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.innerHTML = '<span class="button-spinner"></span>Saving...';
+
         const studentData = {
             name: document.getElementById('student-name').value,
             surname: document.getElementById('student-surname').value,
@@ -485,6 +493,8 @@ async function initEditStudentPage() {
         if (studentData.modules.length == 0) {
             alert('No modules selected!');
             window.location.href = `student_edit.html?number=${studentNumber}`;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
             return;
         }
         const updateResponse = await fetch(`/api/students/${studentNumber}`, {
@@ -495,6 +505,8 @@ async function initEditStudentPage() {
 
         if (!updateResponse.ok) {
             showStatusMessage('Failed to update student details.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
             return;
         }
 
@@ -503,6 +515,8 @@ async function initEditStudentPage() {
              if (!faceResponse.ok) {
                 const err = await faceResponse.json();
                 showStatusMessage(err.error || 'Details saved, but Face ID update failed.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
                 return;
             }
         }
