@@ -1,0 +1,282 @@
+/* ===============================
+   Global & Dashboard Styles (Consistent with Lecturer Dashboards)
+=============================== */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #161f35;
+    color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #13192a;
+    padding: 10px 20px;
+    box-shadow: 0 4px 3px rgba(0,0,0,0.2);
+}
+
+.dut-logo {
+    height: 40px;
+    vertical-align: middle;
+}
+
+.header-right {
+    display: flex;
+    gap: 25px;
+}
+
+.profile-btn, .logout-btn {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.2s;
+}
+
+.logout-btn {
+    background-color: #3ca087;
+    border-radius: 5px;
+}
+.logout-btn:hover {
+    background-color: #3ca087; 
+}
+.profile-btn:hover {
+    color: white;
+}
+
+/* ===============================
+   Page Structure
+=============================== */
+.back-button-container {
+    padding: 20px; 
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.back-btn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+}
+
+.back-icon {
+    width: 30px;
+    height: 30px;
+}
+
+.dashboard-content {
+    flex-grow: 1;
+    padding: 0 20px 20px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.page-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.page-title {
+    color: white;
+    font-size: 2em;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: #3ca087;
+    font-size: 1.1em;
+    margin: 5px 0 0;
+    font-weight: bold;
+}
+
+/* ===============================
+   Timetable Grid Styles
+=============================== */
+.timetable-container {
+    background-color: #13192a;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.timetable-grid {
+    display: grid;
+    /* 7 columns for 7 days */
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 15px;
+}
+
+.day-column {
+    background-color: #161f35;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    overflow: hidden;
+    min-height: 250px; /* Ensures a minimum height even if no classes */
+    display: flex;
+    flex-direction: column;
+}
+
+.day-header {
+    background-color: #34495e;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.periods-list {
+    padding: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.period-card {
+    background-color: #3ca087;
+    color: #13192a;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer; 
+    position: relative;
+    transition: transform 0.1s, background-color 0.3s;
+}
+
+.period-card:hover:not(.period-cancelled) {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+.no-periods {
+    color: #95a5a6;
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 0.85em;
+}
+
+.period-card strong {
+    display: block;
+    font-size: 1.1em;
+    margin-bottom: 3px;
+    color: white;
+}
+
+/* --- CANCELLED PERIOD STYLES (Grayed out and scratched out) --- */
+.period-card.period-cancelled {
+    background-color: #6c757d; /* Gray background for cancelled */
+    opacity: 0.7;
+    text-decoration: line-through;
+    cursor: default; /* Change cursor when cancelled */
+}
+
+.period-card.period-cancelled strong,
+.period-card.period-cancelled p {
+    color: #f8f9fa; /* Lighter text for contrast */
+}
+
+/* ===============================
+   Custom Modal Styles 
+=============================== */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #13192a;
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+#modal-message {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 45%;
+}
+
+.confirm-btn {
+    background-color: #dc3545; /* Red for confirmation/cancellation */
+    color: white;
+}
+
+.confirm-btn:hover {
+    background-color: #c82333;
+}
+
+.cancel-btn {
+    background-color: #34495e; /* Darker grey for cancellation/keeping active */
+    color: white;
+}
+
+.cancel-btn:hover {
+    background-color: #2b3a4a;
+}
+
+
+/* Responsive adjustments for mobile view */
+@media (max-width: 768px) {
+    .timetable-grid {
+        /* On smaller screens, stack the days vertically */
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===============================
+   Footer
+=============================== */
+footer {
+    background-color: #13192a;
+    color: #95a5a6;
+    text-align: center;
+    padding: 10px;
+    margin-top: 20px;
+}

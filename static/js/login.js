@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // In a real app, send new password + token securely to server here
 
             alert('Your password has been successfully reset. You can now log in with your new password.');
-            window.location.href = 'login.html';
+            window.location.href = '/';
         });
     }
 });

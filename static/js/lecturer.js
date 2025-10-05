@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         logoutBtn.addEventListener('click', () => {
             const confirmed = confirm('Are you sure you want to logout?');
             if (confirmed) {
-                window.location.href = 'login.html';  // Change as needed
+                window.location.href = '/';  // Change as needed
             }
         });
     }

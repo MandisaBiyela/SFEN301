@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     document.querySelector('.logout-btn')?.addEventListener('click', () => {
-        if (confirm("Are you sure you want to log out?")) window.location.href = 'login.html';
+        if (confirm("Are you sure you want to log out?")) window.location.href = '/';
     });
     document.querySelector('.profile-btn')?.addEventListener('click', () => {
         window.location.href = 'profile.html';

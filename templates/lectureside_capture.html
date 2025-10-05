@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Facial Attendance Capture</title>
+    <link rel="stylesheet" href="static/css/lectureside_capture.css" />
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <!-- DUT Logo is pressable and linked to the dashboard -->
+            <a href="#" id="dut-logo-link">
+                <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo" />
+            </a>
+        </div>
+        <div class="header-right">
+            <!-- Profile Button -->
+            <button class="profile-btn" id="profile-btn">Profile</button>
+            <!-- Logout Button -->
+            <button class="logout-btn" id="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <!-- Back Button Container below the Header -->
+    <div class="back-button-container">
+        <button type="button" class="back-btn" id="back-button" aria-label="Back to Dashboard">
+            <img src="{{ url_for('static', filename='images/Back.png') }}" alt="Back icon" class="back-icon" />
+        </button>
+    </div>
+
+    <main class="dashboard-content">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">AUTOMATED ATTENDANCE</h1>
+            <p class="dashboard-subtitle">Facial Recognition Check-in</p>
+        </div>
+
+        <div class="camera-container">
+            <video class="video-feed" id="video-feed" autoplay muted playsinline></video>
+            <div class="status-overlay">
+                <!-- Initial message is set by JavaScript -->
+                <p class="message-text initial-message" id="status-message">Loading Camera...</p>
+            </div>
+        </div>
+
+        <div class="log-container">
+            <h3>Attendance Log</h3>
+            <ul class="attendance-log" id="attendance-log">
+                <!-- Log entries added by JavaScript -->
+                <li><span style="color: #f4f4f4;">System initialized. Waiting for first face scan.</span></li>
+            </ul>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+    
+    <!-- Custom Modal Box (replaces alert/confirm) -->
+    <div id="modal-box" class="modal-box hidden">
+        <p id="modal-text" class="modal-text">Modal message here.</p>
+        <div class="modal-actions">
+            <!-- The new 'No' button -->
+            <button id="modal-no-btn" class="modal-no-btn">No</button>
+            <!-- The updated 'Yes' button (previously 'Close') -->
+            <button id="modal-close-btn" class="modal-close-btn">Yes</button>
+        </div>
+    </div>
+
+
+    <script src="static/js/lectureside_capture.js"></script>
+</body>
+</html>

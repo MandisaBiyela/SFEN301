@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (confirm("Are you sure you want to log out?")) {
       sessionStorage.clear();
       localStorage.clear();
-      window.location.href = 'login.html';
+      window.location.href = '/';
     }
   });
 

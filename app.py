@@ -64,14 +64,9 @@ def compute_embedding(image_bytes):
         return None
 
 
-#Incase i want to check the login as the first page
-""""
-@app.route('/')
-def login():
-    return render_template('login.html')
-"""
+#Login Page as the first page//////////////////////////////////////////////////
 
-@app.route('/login.html')
+@app.route('/')
 def login():
     return render_template('login.html')
 
@@ -84,8 +79,41 @@ def new_password():
     return render_template('new_password.html')
 
 
+#LECTURE SIDE STARTS HERE BAAFETHU///////////////////////////////////////////////////////////////////////////
+
+@app.route('/lectureside_attendance.html')
+def lectureside_attendance():
+    return render_template('lectureside_attendance.html')
+
+@app.route('/lectureside_capture.html')
+def lectureside_capture():
+    return render_template('lectureside_capture.html')
+
+
+@app.route('/lectureside_dashboard.html')
+def lectureside_dashboard():
+    return render_template('lectureside_dashboard.html')
+
+@app.route('/lectureside_modules.html')
+def lectureside_modules():
+    return render_template('lectureside_modules.html')
+
+@app.route('/lectureside_periods.html')
+def lectureside_periods():
+    return render_template('lectureside_periods.html')
+
+@app.route('/lectureside_profile.html')
+def lectureside_profile():
+    return render_template('lectureside_profile.html')
+
+
+#LECTURE SIDE ENDS HERE BAFETHU//////////////////////////////////////////////////////////////////////////
+
+
+
+
 #Incase i want to check the Admin Dashboard as the first page
-@app.route('/')
+
 @app.route('/admin_dashboard.html')
 def admin_dashboard():
     return render_template('admin_dashboard.html')

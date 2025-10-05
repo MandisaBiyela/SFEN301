@@ -1,0 +1,228 @@
+/* profile.css */
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #161f35;
+  color: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #13192a;
+  padding: 10px 20px;
+  box-shadow: 0 4px 3px rgba(0, 0, 0, 0.2);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dut-logo {
+  height: 40px;
+  vertical-align: middle;
+}
+
+.header-right {
+  display: flex;
+  gap: 25px;
+}
+
+.logout-btn {
+  background-color: #3ca087; /* Green color */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 1em;
+  border-radius: 5px;
+}
+
+.dashboard-content {
+  padding: 20px;
+  flex-grow: 1;
+}
+
+.dashboard-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.dashboard-title {
+  color: white;
+  font-size: 2em;
+  margin: 0;
+}
+
+.dashboard-subtitle {
+  color: #3ca087; /* Green color */
+  font-size: 1.1em;
+  margin: 5px 0 0;
+  font-weight: bold;
+}
+
+footer {
+  background-color: #13192a;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  box-shadow: 0 -4px 3px rgba(0, 0, 0, 0.2);
+}
+
+.back-button-container {
+  text-align: left;
+  margin: 15px 0 20px 10px;
+}
+
+.back-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s;
+}
+
+.back-btn:hover {
+  transform: scale(1.1);
+  background-color: transparent;
+}
+
+.back-icon {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.profile-card {
+  /* This is the main container style, kept identical */
+  background-color: #34495e;
+  padding: 30px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 5px;
+}
+
+.profile-detail {
+  margin-bottom: 20px;
+  font-size: 1.1em;
+}
+
+.detail-label {
+  color: #3ca087; /* Green color */
+  font-weight: bold;
+  display: inline-block;
+  width: 120px;
+}
+
+.detail-value {
+  color: white;
+}
+
+/* Styles for Change Password button */
+.change-password-btn {
+    background-color: #5c7e9a; /* Blue/grey color */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 1em;
+    border-radius: 5px;
+    margin-top: 10px;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+.change-password-btn:hover {
+    background-color: #4a667d;
+}
+
+.change-password-container {
+    text-align: center;
+    margin-top: 25px; 
+    padding-top: 15px;
+    border-top: 1px solid #4a667d;
+}
+
+/* NEW FORM STYLES */
+.form-title {
+    color: #f4f4f4;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    border-bottom: 1px solid #4a667d;
+    padding-bottom: 10px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    color: #3ca087; /* Green color */
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-group input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #4a667d;
+    border-radius: 5px;
+    background-color: #2a3a4a;
+    color: white;
+    box-sizing: border-box; /* Include padding in the element's total width and height */
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.submit-btn, .cancel-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 50%;
+    transition: background-color 0.3s;
+}
+
+.submit-btn {
+    background-color: #3ca087; /* Green color for positive action */
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #2f816b;
+}
+
+.cancel-btn {
+    background-color: #95a5a6; /* Grey/neutral color for cancel */
+    color: #161f35;
+}
+
+.cancel-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.error-message {
+    color: #e74c3c; /* Red for errors */
+    text-align: center;
+    margin-top: 10px;
+    font-weight: bold;
+}

@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Profile button navigation
     if (profileBtn) {
         profileBtn.addEventListener('click', () => {
-            window.location.href = 'profile.html';
+            window.location.href = 'lectureside_profile.html';
         });
     }
 

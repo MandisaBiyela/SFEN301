@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', function () {
   if (profileBtn) {
     profileBtn.addEventListener('click', function () {
       // Redirect to profile page
-      window.location.href = 'profile.html';
+      window.location.href = 'lectureside_profile.html';
     });
   }
+
+  
 });

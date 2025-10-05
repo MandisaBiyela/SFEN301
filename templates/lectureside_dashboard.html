@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lecturer Dashboard</title>
+  <!-- NOTE: Update the CSS path if the file structure changes -->
+  <link rel="stylesheet" href="static/css/lectureside_dashboard.css" />
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-left">
+      <img src="{{ url_for('static', filename='images/DUT.png') }}" alt="DUT Logo" class="dut-logo" />
+    </div>
+    <div class="header-right">
+      <button class="profile-btn">Profile</button>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-header">
+      <!-- Title is now just LECTURER DASHBOARD -->
+      <h1 class="dashboard-title">LECTURER DASHBOARD</h1>
+      <!-- Subtitle with placeholder lecturer name -->
+      <p class="dashboard-subtitle">Welcome Nozipho Mbonambi</p>
+    </div>
+
+    <!-- New container to manage the two sections: large card and small card row -->
+    <div class="dashboard-cards-layout">
+        
+      <!-- Primary Card Area: Capture Attendance -->
+      <div class="primary-card-area">
+          <a href="lectureside_capture.html" class="dashboard-card main-card">
+            <!-- Placeholder for the new icon. Remember to put your .png here! -->
+            <img src="{{ url_for('static', filename='images/CaptureAttendance.png') }}" alt="Capture Attendance Icon" class="card-image-icon main-icon" />
+            <h3 class="card-title main-title">Capture Attendance</h3>
+          </a>
+      </div>
+      
+      <!-- Secondary Cards Area: Modules Taught, Module Periods, View Attendance -->
+      <div class="secondary-cards-container">
+          <!-- 1. Modules Taught -->
+          <a href="lectureside_modules.html" class="dashboard-card secondary-card">
+            <img src="{{ url_for('static', filename='images/Register.png') }}" alt="Modules Taught Icon" class="card-image-icon" />
+            <h3 class="card-title">Modules Taught</h3>
+          </a>
+          
+          <!-- 2. Module Periods -->
+          <a href="lectureside_periods.html" class="dashboard-card secondary-card">
+            <img src="{{ url_for('static', filename='images/ModulePeriod.png') }}" alt="Module Periods Icon" class="card-image-icon" />
+            <h3 class="card-title">Module Periods</h3>
+          </a>
+          
+          <!-- 3. View Attendance -->
+          <a href="lectureside_attendance.html" class="dashboard-card secondary-card">
+            <img src="{{ url_for('static', filename='images/ViewAttendance.png') }}" alt="Attendance Icon" class="card-image-icon" />
+            <h3 class="card-title">View Attendance</h3>
+          </a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; CyberRogues Attendance System</p>
+  </footer>
+
+  <script src="static/js/lectureside_dashboard.js"></script>
+</body>
+</html>

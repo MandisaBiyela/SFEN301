@@ -1,0 +1,283 @@
+/* Base styles from previous files */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #161f35;
+    color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- Header Styles --- */
+.main-header {
+    display: flex;
+    justify-content: space-between; /* Puts logo left and actions right */
+    align-items: center;
+    background-color: #13192a;
+    padding: 10px 20px;
+    box-shadow: 0 4px 3px rgba(0, 0, 0, 0.2);
+}
+
+.header-left {
+    /* Contains the DUT logo on the far left */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.dut-logo {
+    height: 40px;
+    vertical-align: middle;
+}
+
+.header-right {
+    /* Contains the Profile and Logout buttons */
+    display: flex;
+    gap: 25px;
+}
+
+/* Button Styles */
+.logout-btn {
+    background-color: #3ca087; /* Accent color */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1em;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #2f816b;
+}
+
+.profile-btn {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: color 0.2s;
+}
+
+.profile-btn:hover {
+    color: #3ca087;
+}
+
+/* --- Back Button Container (Below Header) --- */
+.back-button-container {
+    text-align: left; /* Aligns the back button to the left */
+    margin: 15px 20px 5px 20px; /* Provides consistent spacing */
+}
+
+.back-btn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+    background-color: transparent;
+}
+
+.back-icon {
+    width: 30px;
+    height: 30px;
+    display: block;
+}
+
+
+/* --- Content and Layout Styles --- */
+
+.dashboard-content {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dashboard-header {
+    margin-bottom: 20px;
+    text-align: center;
+    width: 100%;
+}
+
+.dashboard-title {
+    color: white;
+    font-size: 2em;
+    margin: 0;
+}
+
+.dashboard-subtitle {
+    color: #3ca087;
+    font-size: 1.1em;
+    margin: 5px 0 0;
+    font-weight: bold;
+}
+
+footer {
+    background-color: #13192a;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    box-shadow: 0 -4px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* New Facial Recognition Styles */
+.camera-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px; /* Standard webcam size */
+    border: 5px solid #3ca087; /* Green border for focus */
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    margin-bottom: 30px;
+    box-shadow: 0 0 20px rgba(60, 160, 135, 0.5);
+}
+
+.video-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.status-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    text-align: center;
+    transition: background-color 0.5s;
+}
+
+.message-text {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 0;
+}
+
+.initial-message {
+    color: #f4f4f4;
+}
+
+.present-message {
+    color: #3ca087; /* Green for success */
+}
+
+.unidentifiable-message {
+    color: #e74c3c; /* Red for error or unidentifiable */
+}
+
+.already-present-message {
+    color: #f39c12; /* Orange for already present warning */
+}
+
+/* Log Styles */
+.log-container {
+    background-color: #13192a;
+    padding: 15px;
+    border-radius: 5px;
+    width: 100%;
+    max-width: 640px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.log-container h3 {
+    color: #3ca087;
+    margin-top: 0;
+    border-bottom: 2px solid #3ca087;
+    padding-bottom: 5px;
+}
+
+.attendance-log {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.attendance-log li {
+    padding: 8px 0;
+    border-bottom: 1px dashed #4a667d;
+    font-size: 0.9em;
+}
+
+.attendance-log li:last-child {
+    border-bottom: none;
+}
+
+/* Custom Modal Box for non-alert messages */
+.modal-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #34495e;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    max-width: 90%;
+    text-align: center;
+}
+
+.modal-box.hidden {
+    display: none;
+}
+
+.modal-text {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+}
+
+/* Button styles for 'Yes' (previously Close) and 'No' */
+/* Changed the existing button class to be the 'Yes' button */
+.modal-close-btn { 
+    background-color: #3ca087; /* Green (Yes) */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 5px; /* Added spacing between buttons */
+    transition: background-color 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: #2f816b;
+}
+
+/* New style for the 'No' button */
+.modal-no-btn {
+    background-color: #e74c3c; /* Red (No) */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 5px; /* Added spacing between buttons */
+    transition: background-color 0.2s;
+}
+
+.modal-no-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .camera-container, .log-container {
+        max-width: 100%;
+    }
+}

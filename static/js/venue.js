@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             if (confirm("Are you sure you want to log out?")) {
                 // You can clear session/local storage here if needed
-                window.location.href = 'login.html';
+                window.location.href = '/';
             }
         });
     }

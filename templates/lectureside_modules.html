@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modules Taught</title>
+    <!-- Links to the CSS file for this page -->
+    <link rel="stylesheet" href="static/css/lectureside_modules.css"> 
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-left">
+            <!-- Link back to the lecturer dashboard -->
+            <a href="lectureside_dashboard.html">
+                <img src="static/images/DUT.png" alt="DUT Logo" class="dut-logo">
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="profile-btn">Profile</button>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+
+    <div class="back-button-container">
+        <!-- Back button goes to the previous page (Dashboard) -->
+        <button class="back-btn" id="back-button">
+            <img src="static/images/Back.png" alt="Back" class="back-icon">
+        </button>
+    </div>
+
+    <!-- Status message container for user feedback -->
+    <div id="status-message-container" class="status-message-container" style="display: none;">
+        <p id="status-message" class="status-message">Action completed successfully.</p>
+    </div>
+
+    <main class="page-content">
+        <div class="page-header">
+            <h1 class="page-title">MODULES TAUGHT</h1>
+            <p class="page-subtitle">Select a module to view your enrolled students</p>
+        </div>
+        
+        <!-- Search bar for modules (visible first) or students (visible after module selection) -->
+        <div class="search-container">
+            <input type="text" id="data-search-input" class="search-input" placeholder="Search for modules...">
+        </div>
+
+        <!-- Section 1: Module List Table (Visible on initial load) -->
+        <section class="table-container" id="module-list-section">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Module Code</th>
+                        <th>Module Name</th>
+                    </tr>
+                </thead>
+                <tbody id="module-table-body">
+                    <!-- Module rows will be injected here by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Section 2: Student Register Table (Hidden initially, shown on module click) -->
+        <section class="table-container" id="student-register-section" style="display:none;">
+            <div class="student-register-controls">
+                <!-- Displays the currently selected module code -->
+                <h2 id="current-module-title" class="current-module-title">Register for:</h2>
+                <div class="button-group">
+                     <!-- Button to return to the module list -->
+                    <button id="back-to-modules-btn" class="action-btn">
+                        &lt; Back to Modules
+                    </button>
+                    <!-- Print button -->
+                    <button id="print-register-btn" class="action-btn print-btn">
+                        Print Register
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Student data table -->
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Student Number</th>
+                        <th>Name</th>
+                        <th>Surname</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body">
+                    <!-- Student rows will be injected here by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; CyberRogues Attendance System</p>
+    </footer>
+
+    <script src="static/js/lectureside_modules.js"></script>
+</body>
+</html>

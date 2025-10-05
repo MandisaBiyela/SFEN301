@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.history.back();
     });
     document.querySelector('.logout-btn')?.addEventListener('click', () => {
-        if (confirm("Are you sure?")) window.location.href = 'login.html';
+        if (confirm("Are you sure?")) window.location.href = '/';
     });
     document.querySelector('.profile-btn')?.addEventListener('click', () => {
         window.location.href = 'profile.html';

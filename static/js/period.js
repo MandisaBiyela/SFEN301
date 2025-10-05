@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         logoutBtn.addEventListener('click', () => {
             if(confirm('Are you sure you want to log out?')) {
                 // Clear any session/local storage if needed here
-                window.location.href = 'login.html';
+                window.location.href = '/';
             }
         });
     }
