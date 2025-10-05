@@ -9,7 +9,7 @@ class Lecturer(db.Model):
     Represents a lecturer in the system.
     """
     __tablename__ = 'lecturers'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lecturer_number = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     surname = db.Column(db.String(100), nullable=False)
@@ -17,6 +17,15 @@ class Lecturer(db.Model):
 
     def __repr__(self):
         return f'<Lecturer {self.name} {self.surname}>'
+
+    @staticmethod
+    def validate_unique(lecturer_number, email):
+        errors = []
+        if Lecturer.query.filter_by(lecturer_number=lecturer_number).first():
+            errors.append('Lecturer number already exists.')
+        if Lecturer.query.filter_by(email=email).first():
+            errors.append('Email already exists.')
+        return errors
 
 class Attendance(db.Model):
     """
@@ -27,7 +36,8 @@ class Attendance(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('students.student_number'), nullable=False)
     class_period_id = db.Column(db.Integer, db.ForeignKey('class_period.id'))
     name = db.Column(db.String(100), nullable=False)
-    time = db.Column(db.String(100), default=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    time = db.Column(db.String(8), nullable=False) # Time of day (HH:MM:SS)
+    date = db.Column(db.String(10), nullable=False) # Date (YYYY-MM-DD) <-- ADDED
     status = db.Column(db.String(50), nullable=False, default='Absence')
 
     # Relationships
@@ -42,7 +52,7 @@ class Student(db.Model):
     Represents a student in the system.
     """
     __tablename__ = 'students'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     student_number = db.Column(db.String(8), unique=True, nullable=False, index=True)
     student_name = db.Column(db.String(100), nullable=False)
     student_surname = db.Column(db.String(100), nullable=False)
@@ -54,6 +64,17 @@ class Student(db.Model):
     def __repr__(self):
         return f'<Student {self.student_name} {self.student_surname}>'
 
+    @staticmethod
+    def validate_unique(student_number, student_email):
+        exists_number = Student.query.filter_by(student_number=student_number).first()
+        exists_email = Student.query.filter_by(student_email=student_email).first()
+        errors = []
+        if exists_number:
+            errors.append('Student number already exists.')
+        if exists_email:
+            errors.append('Email already exists.')
+        return errors
+
 class Class_Register(db.Model):
     """
     Represents a class register in the system.
@@ -61,7 +82,7 @@ class Class_Register(db.Model):
     __tablename__ = 'class_register'
     id = db.Column(db.Integer, primary_key=True)
     student_number = db.Column(db.String(50), db.ForeignKey('students.student_number'), nullable=False)
-    register_id = db.Column(db.String(50), unique=True, nullable=False)
+    register_id = db.Column(db.String(50), nullable=False)
     subject_code = db.Column(db.String(100), db.ForeignKey('module.module_code'), nullable=False)
     semester = db.Column(db.String(50), nullable=False)
     year = db.Column(db.String(5), default=lambda: datetime.now().strftime("%Y"))
@@ -97,8 +118,11 @@ class Class_Period(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     period_id = db.Column(db.String(50), unique=True, nullable=False)
     class_register = db.Column(db.String(50), db.ForeignKey('class_register.register_id'), nullable=False)
-    period_start_time = db.Column(db.String(100), nullable=False)
-    period_end_time = db.Column(db.String(100), nullable=False)
+    # Day of the week (e.g., 'Monday', 'Tuesday')
+    day_of_week = db.Column(db.String(10), nullable=False) 
+    # Time columns now store only the time (e.g., '10:00')
+    period_start_time = db.Column(db.String(5), nullable=False)
+    period_end_time = db.Column(db.String(5), nullable=False)
     period_venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
 
     # Relationships

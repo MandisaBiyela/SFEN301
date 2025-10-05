@@ -137,22 +137,25 @@ def lecturer_add():
     POST: Processes the form data and saves it.
     """
     if request.method == 'POST':
-        # Get data from the form
-        lecturer_number = request.form.get('lecturer-number')
+        # Get data from the form (no lecturer_number, it's auto-generated)
         name = request.form.get('lecturer-name')
         surname = request.form.get('lecturer-surname')
         email = request.form.get('lecturer-email')
 
         # Basic validation
-        if not all([lecturer_number, name, surname, email]):
+        if not all([name, surname, email]):
             return jsonify({'error': 'All fields are required!'}), 400
 
-        # Check if lecturer or email already exists
-        if Lecturer.query.filter_by(lecturer_number=lecturer_number).first():
-            return jsonify({'error': 'A lecturer with this number already exists.'}), 400
-        
-        if Lecturer.query.filter_by(email=email).first():
-            return jsonify({'error': 'This email address is already registered.'}), 400
+        # Generate a unique lecturer_number (e.g., use max id + 1 or UUID)
+        # Here, we'll use a simple increment based on the max id
+        last_lecturer = Lecturer.query.order_by(Lecturer.id.desc()).first()
+        next_number = 1000 if not last_lecturer else int(last_lecturer.lecturer_number) + 1 if last_lecturer.lecturer_number.isdigit() else last_lecturer.id + 1
+        lecturer_number = str(next_number)
+
+        # Use model validation for uniqueness
+        errors = Lecturer.validate_unique(lecturer_number, email)
+        if errors:
+            return jsonify({'error': ' '.join(errors)}), 400
 
         # Create a new Lecturer object
         new_lecturer = Lecturer(
@@ -205,13 +208,23 @@ def lecturer_edit():
             lecturer_to_update.surname = surname
             lecturer_to_update.email = email
 
-            # Commit the changes to the database
-            db.session.commit()
-            print("Record updated successfully!")
-            flash(f"Record for {lecturer_number} updated successfully!")
-            # return render_template('lecturer.html')
+            try:
+                db.session.commit()
+                return jsonify({
+                    'message': f'Record for {lecturer_number} updated successfully!',
+                    'lecturer': {
+                        'lecturer_number': lecturer_number,
+                        'name': name,
+                        'surname': surname,
+                        'email': email
+                    }
+                }), 200
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating lecturer: {e}")
+                return jsonify({'error': 'An error occurred while updating the lecturer.'}), 500
         else:
-            print("Lecturer not found.")
+            return jsonify({'error': 'Lecturer not found.'}), 404
 
     return render_template('lecturer_edit.html')
 
@@ -541,6 +554,7 @@ def get_periods():
                 'class_register': p.class_register,
                 'period_start_time': p.period_start_time,
                 'period_end_time': p.period_end_time,
+                'day_of_week': p.day_of_week,
                 'venue_id': p.period_venue_id,
                 'venue_name': venue.venue_name if venue else 'Unknown',
                 'venue_block': venue.venue_block if venue else '',
@@ -562,6 +576,7 @@ def add_period():
         class_register = data.get('class_register')
         period_start_time = data.get('period_start_time')
         period_end_time = data.get('period_end_time')
+        day_of_week = data.get('day_of_week')
         period_venue_id = data.get('period_venue_id')
 
         # Validate required fields
@@ -580,6 +595,7 @@ def add_period():
             period_id=period_id,
             class_register=class_register,
             period_start_time=period_start_time,
+            day_of_week=day_of_week,
             period_end_time=period_end_time,
             period_venue_id=period_venue_id
         )
@@ -765,6 +781,23 @@ def get_module_register_summary(module_code):
         return jsonify({'error': 'Error fetching summary data'}), 500
 
 # --- CLASS REGISTER MANAGEMENT ENDPOINTS ---
+@app.route('/api/register_students', methods=['GET'])
+def get_student_register():
+    """
+    Fetches the mapping of students to modules (class registers).
+    """
+    try:
+        register_entries = Class_Register.query.all()
+        result = []
+        for entry in register_entries:
+            result.append({
+                'student_number': entry.student_number,
+                'register_id': entry.register_id # This is the module code
+            })
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error fetching student register data: {e}")
+        return jsonify({'error': 'Error fetching student register data'}), 500
 
 @app.route('/api/registers', methods=['POST'])
 def add_class_register():
@@ -857,7 +890,8 @@ def get_attendance():
         student_number = request.args.get('student_number')
         class_period_id = request.args.get('class_period_id')
         module_code = request.args.get('module_code')
-        date = request.args.get('date')
+        period_id = request.args.get('period_id')
+        date_str = request.args.get('date') # YYYY-MM-DD
         
         query = Attendance.query
         
@@ -866,15 +900,24 @@ def get_attendance():
             query = query.filter_by(user_id=student_number)
         if class_period_id:
             query = query.filter_by(class_period_id=class_period_id)
-        if date:
-            query = query.filter(Attendance.time.like(f'{date}%'))
-        
-        attendance_records = query.order_by(Attendance.time.desc()).all()
+        if module_code or period_id:
+            query = query.join(Class_Period)
+            if period_id and period_id != 'all':
+                # Filter by specific period ID (e.g. MON1000)
+                query = query.filter(Class_Period.period_id == period_id)
+            elif module_code and module_code != 'all':
+                # Filter by module code (which is the class_register ID)
+                query = query.join(Class_Period.register).filter(Class_Register.register_id == module_code)
+
+        # 1. Filter by specific date
+        if date_str:
+            query = query.filter(Attendance.date == date_str)
+    
+        attendance_records = query.order_by(Attendance.date.desc(), Attendance.time.asc()).all()
         
         attendance_list = []
         for a in attendance_records:
             # Get student and period information
-            student = Student.query.filter_by(student_number=a.user_id).first()
             period = Class_Period.query.filter_by(id=a.class_period_id).first() if a.class_period_id else None
             
             attendance_list.append({
@@ -883,9 +926,8 @@ def get_attendance():
                 'class_period_id': a.class_period_id,
                 'name': a.name,
                 'time': a.time,
+                'date': a.date, 
                 'status': a.status,
-                'student_name': f"{student.student_name} {student.student_surname}" if student else 'Unknown',
-                'period_id': period.period_id if period else None,
                 'venue_name': period.venue.venue_name if period and period.venue else None
             })
         
@@ -893,6 +935,7 @@ def get_attendance():
     except Exception as e:
         print(f"Error fetching attendance: {e}")
         return jsonify({'error': 'Error fetching attendance data'}), 500
+
 
 @app.route('/api/attendance', methods=['POST'])
 def add_attendance():
@@ -971,6 +1014,15 @@ def delete_attendance(attendance_id):
 
 # --- STUDENT API ENDPOINTS ---
 
+@app.route('/api/students/check/<student_number>', methods=['GET'])
+def check_student_exists(student_number):
+    """ API to check if a student number already exists. """
+    try:
+        exists = Student.query.filter_by(student_number=student_number).first() is not None
+        return jsonify({'exists': exists}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/students', methods=['GET'])
 def get_students():
     """ API to get a list of all students and their registered modules. """
@@ -1008,7 +1060,7 @@ def get_student(student_number):
             return jsonify({'error': 'Student not found'}), 404
 
         registrations = Class_Register.query.filter_by(student_number=student_number).all()
-        module_codes = [reg.module_code for reg in registrations]
+        subject_code = [reg.subject_code for reg in registrations]
 
         return jsonify({
             'id': student.id,
@@ -1017,7 +1069,7 @@ def get_student(student_number):
             'surname': student.student_surname,
             'has_face_id': student.embedding is not None,
             'face_id_image_url': student.image_path, # URL to the saved face image
-            'modules': module_codes
+            'modules': subject_code
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

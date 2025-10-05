@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     periods: modulePeriods.map(period => ({
                         id: period.id,
                         period_id: period.period_id,
-                        day: extractDayFromTime(period.period_start_time),
-                        time: formatTimeRange(period.period_start_time, period.period_end_time),
+                        day: period.day_of_week,
+                        time: `${period.period_start_time} - ${period.period_end_time}`,
                         venue: period.venue_name,
                         venue_id: period.venue_id
                     }))
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const startTime = periodStartDate.toTimeString().substring(0, 5);
             const endTime = new Date(period.period_end_time).toTimeString().substring(0, 5);
 
-            addPeriodEntry(index + 1, day, startTime, endTime, period.venue_id);
+            addPeriodEntry(index + 1, day, period.period_start_time, period.period_end_time, period.venue_id);
         });
 
         periodCounter = existingPeriods.length;
@@ -466,8 +466,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         periods.push({
                             period_id: periodId,
                             class_register: `${currentModuleCode}-2-${new Date().getFullYear()}`, // Default register ID
-                            period_start_time: startTime, //targetStartDate.toISOString(),
-                            period_end_time: endTime, //targetEndDate.toISOString(),
+                            day_of_week: day,
+                            period_start_time: startTime, 
+                            period_end_time: endTime,
                             period_venue_id: parseInt(venueId)
                         });
                     }

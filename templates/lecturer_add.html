@@ -34,17 +34,8 @@
         </div>
 
         <section class="form-container">
+            <div id="generated-lecturer-number" style="display:none; margin-bottom: 1em; color: green; font-weight: bold;"></div>
             <form id="add-lecturer-form" method="POST" action="{{ url_for('lecturer_add') }}">
-                <div class="form-group">
-                    <label for="lecturer-number">Lecturer Number</label>
-                    <input
-                        type="text"
-                        id="lecturer-number"
-                        name="lecturer-number"
-                        placeholder="e.g., 001"
-                        required
-                    />
-                </div>
                 <div class="form-group">
                     <label for="lecturer-name">Name</label>
                     <input
@@ -71,7 +62,7 @@
                         type="email"
                         id="lecturer-email"
                         name="lecturer-email"
-                        placeholder="e.g., jane.doe@dut.ac.za"
+                        placeholder="e.g., NdumisoMthembu@dut.ac.za"
                         required
                         pattern="^[A-Za-z0-9._%+-]+@dut\.ac\.za$"
 

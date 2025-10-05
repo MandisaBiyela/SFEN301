@@ -533,3 +533,167 @@ footer {
     display: flex;
     justify-content: center;
 }
+
+/*
+====================================
+  Validation & Status Message Styles
+====================================
+*/
+
+/* Enhanced Status Messages */
+.status-message-container.success {
+    background-color: rgba(60, 160, 135, 0.3);
+    border: 1px solid #3ca087;
+    color: #3ca087;
+}
+
+.status-message-container.error {
+    background-color: rgba(231, 76, 60, 0.3);
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+}
+
+.status-message-container.warning {
+    background-color: rgba(255, 165, 0, 0.3);
+    border: 1px solid #ffa500;
+    color: #ffa500;
+}
+
+/* Validation message styles */
+.validation-message {
+    margin-top: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 3px;
+    display: inline-block;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+.validation-message.error {
+    color: #ff4444;
+    background-color: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.validation-message.success {
+    color: #00aa00;
+    background-color: rgba(0, 170, 0, 0.1);
+    border: 1px solid rgba(0, 170, 0, 0.3);
+}
+
+.validation-message.info {
+    color: #5bc0de;
+    background-color: rgba(91, 192, 222, 0.1);
+    border: 1px solid rgba(91, 192, 222, 0.3);
+}
+
+/* Input field validation styling */
+.form-group input[type="text"]:invalid,
+.form-group input[type="text"].error {
+    border: 2px solid #ff4444 !important;
+    box-shadow: 0 0 5px rgba(255, 68, 68, 0.3);
+}
+
+.form-group input[type="text"]:valid,
+.form-group input[type="text"].success {
+    border: 2px solid #00aa00 !important;
+    box-shadow: 0 0 5px rgba(0, 170, 0, 0.3);
+}
+
+/* Submit button disabled state */
+.submit-btn:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    background-color: #666 !important;
+}
+
+/* Module search and selection styles */
+.module-search-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    border: 1px solid #555;
+    background-color: #161f35;
+    color: white;
+    border-radius: 5px;
+}
+
+.module-search-input::placeholder {
+    color: #aaa;
+}
+
+.module-selection-box {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #555;
+    background-color: #161f35;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 5px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.checkbox-group:hover {
+    background-color: rgba(60, 160, 135, 0.1);
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+    accent-color: #3ca087;
+}
+
+.checkbox-group label {
+    cursor: pointer;
+    margin: 0;
+    color: #f4f4f4;
+    font-size: 14px;
+}
+
+/*
+====================================
+  Spinner Loader for Buttons
+====================================
+*/
+.button-spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid #fff;
+    border-top: 3px solid #3ca087;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
