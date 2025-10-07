@@ -42,17 +42,20 @@ def compute_embedding(image_bytes):
         # Decode image bytes into an OpenCV image
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
+        
         if img is None:
-            raise ValueError("Could not decode image bytes.")
-
+            raise ValueError("Cou2222ld not decode image bytes.")
+        
         # Use DeepFace to generate the embedding
         embedding_objs = DeepFace.represent(
             img_path=img,
-            model_name="Facenet512",
-            detector_backend="retinaface",
-            enforce_detection=True # Ensure a face is found
+            model_name="SFace",
+            detector_backend="ssd",
+            enforce_detection=False # Allow it to fail gracefully if no face
         )
+        if not embedding_objs or not embedding_objs[0]["facial_area"]["w"] > 0:
+            return None
+        
         # Extract the embedding vector
         embedding = embedding_objs[0]["embedding"]
         return np.array(embedding, dtype=np.float32)
@@ -1249,7 +1252,121 @@ def register_face():
         print(f"Face registration error: {e}")
         return jsonify({'error': 'An internal error occurred during face registration.'}), 500
 
+# --- ATTENDANCE CAPTURE API ---
 
+def cosine_similarity(vec1, vec2):
+    """ Helper to compute cosine similarity between two embeddings. """
+    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+def is_period_active_now():
+    """
+    Checks if a class period is active using SQLAlchemy.
+    Returns the active Class_Period object or None.
+    """
+    now = datetime.now()
+    day_name = now.strftime('%A')
+    current_time_str = now.strftime('%H:%M')
+    
+    active_period = Class_Period.query.filter(
+        Class_Period.day_of_week == day_name,
+        Class_Period.period_start_time <= current_time_str,
+        Class_Period.period_end_time > current_time_str
+    ).first()
+    
+    return active_period
+
+@app.route('/api/mark_attendance', methods=['POST'])
+def mark_attendance():
+    """
+    Receives a video frame, identifies a student, and marks attendance.
+    """
+    # 1. Check if a class period is currently active
+    active_period = is_period_active_now()
+    if not active_period:
+        return jsonify({
+            'status': 'no_active_period',
+            'message': 'No class is currently active.'
+        }), 400
+
+    # 2. Get image data from the request
+    data = request.get_json()
+    if not data or 'image_data' not in data:
+        return jsonify({'error': 'No image data provided'}), 400
+    
+    try:
+        # Decode the Base64 image
+        header, encoded = data['image_data'].split(',', 1)
+        image_bytes = base64.b64decode(encoded)
+    
+        # 3. Compute embedding for the face in the frame
+        frame_embedding = compute_embedding(image_bytes)
+
+        # Add a check to ensure an embedding was successfully created
+        if frame_embedding is None:
+            return jsonify({'status': 'unidentifiable', 'message': 'Could not process the image or no face was detected.'})
+
+
+    except Exception as e:
+        print(f"[ERROR] Face detection/embedding failed: {e}")
+        return jsonify({'status': 'unidentifiable', 'message': 'Could not process the image.'})
+    
+    # 4. Find students registered for the active period's module
+    register_id = active_period.register.register_id
+    module_code = active_period.register.subject_code
+
+    # Find all students registered for this specific module
+    registered_students = db.session.query(Student).join(Class_Register).filter(
+        Class_Register.subject_code == module_code
+    ).all()
+    
+    # 5. Compare frame embedding with registered students' embeddings
+    match_found = False
+    for student in registered_students:
+        if student.embedding:
+            db_embedding = np.frombuffer(student.embedding, dtype=np.float32)
+            similarity = cosine_similarity(frame_embedding, db_embedding)
+
+            if similarity > 0.70: # Confidence threshold
+                
+                # 6. Check if already marked present today for this period
+                today_date = datetime.now().strftime("%Y-%m-%d")
+                existing_record = Attendance.query.filter_by(
+                    user_id=student.student_number,
+                    class_period_id=active_period.id,
+                    date=today_date
+                ).first()
+                
+                full_name = f"{student.student_name} {student.student_surname}"
+
+                if existing_record:
+                    return jsonify({
+                        'status': 'already_present',
+                        'student_name': full_name,
+                        'student_id': student.student_number
+                    })
+                
+
+                # 7. Insert new attendance record
+                now_time = datetime.now().strftime("%H:%M:%S")
+                new_attendance = Attendance(
+                    user_id=student.student_number,
+                    class_period_id=active_period.id,
+                    name=full_name,
+                    time=now_time,
+                    date=today_date,
+                    status="Present"
+                )
+                db.session.add(new_attendance)
+                db.session.commit()
+                
+                return jsonify({
+                    'status': 'present',
+                    'student_name': full_name,
+                    'student_id': student.student_number
+                })
+
+    
+    return jsonify({'status': 'unidentifiable', 'message': 'Face does not match any registered student.'})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000) 

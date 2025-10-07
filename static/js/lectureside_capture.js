@@ -1,8 +1,7 @@
 // --- Configuration ---
-const MOCK_STUDENT_IDS = ['22383677', '19045123', '20199876', '18005555'];
-// Set to track students already marked present
-const attendanceRecords = new Set();
-let recognitionLoopInterval = null;
+let recognitionInterval = null; // To hold the setInterval ID
+let isProcessing = false; // Flag to prevent multiple simultaneous API calls
+const CAPTURE_INTERVAL_MS = 3000; // Capture and send a frame every 3 seconds
 
 // --- DOM Elements ---
 const videoFeed = document.getElementById('video-feed');
@@ -11,45 +10,42 @@ const attendanceLog = document.getElementById('attendance-log');
 const backButton = document.getElementById('back-button');
 const profileBtn = document.getElementById('profile-btn');
 const logoutBtn = document.getElementById('logout-btn');
-const dutLogoLink = document.getElementById('dut-logo-link'); // NEW: For the pressable logo
-
+const dutLogoLink = document.getElementById('dut-logo-link');
 const modalBox = document.getElementById('modal-box');
 const modalText = document.getElementById('modal-text');
-const modalCloseBtn = document.getElementById('modal-close-btn'); // This is the 'Yes' button
-const modalNoBtn = document.getElementById('modal-no-btn'); // The 'No' button
+const modalCloseBtn = document.getElementById('modal-close-btn');
+const modalNoBtn = document.getElementById('modal-no-btn');
+
+// Create a canvas element in memory to capture frames
+const canvas = document.createElement('canvas');
 
 // --- Utility Functions ---
 
 /**
- * Displays a custom modal box instead of using the native alert/confirm.
+ * Displays a custom modal box.
  * @param {string} message - The message to display.
  */
 function showModal(message) {
     modalText.textContent = message;
     modalBox.classList.remove('hidden');
-    // Ensure both buttons are visible when modal is shown for a confirmation prompt
     if (message.includes('Are you sure you want to log out?')) {
         modalCloseBtn.style.display = 'inline-block';
         modalNoBtn.style.display = 'inline-block';
     } else {
-        // For simple notification modals (like the profile link one), only show Yes/Close
         modalCloseBtn.style.display = 'inline-block';
         modalNoBtn.style.display = 'none';
     }
 }
 
-/**
- * Hides the custom modal box.
- */
+/** Hides the custom modal box. */
 function hideModal() {
     modalBox.classList.add('hidden');
 }
 
-
 /**
  * Updates the status overlay message.
  * @param {string} message - The message to display.
- * @param {string} type - The type of message ('initial', 'present', 'unidentifiable', 'already-present').
+ * @param {string} type - 'initial', 'present', 'unidentifiable', 'already-present', 'error'.
  */
 function updateStatus(message, type) {
     statusMessage.textContent = message;
@@ -59,75 +55,117 @@ function updateStatus(message, type) {
 /**
  * Adds an entry to the attendance log.
  * @param {string} entry - The log text.
- * @param {boolean} success - True if attendance was marked, false otherwise.
+ * @param {string} type - 'success', 'warning', 'error'.
  */
-function logAttendance(entry, success) {
+function logAttendance(entry, type) {
     const li = document.createElement('li');
     li.textContent = entry;
-    li.style.color = success ? '#3ca087' : '#e74c3c';
-    
-    // Prepend the new log entry
+
+    const colorMap = {
+        success: '#3ca087', // Green
+        warning: '#f39c12', // Yellow/Orange
+        error: '#e74c3c'    // Red
+    };
+    li.style.color = colorMap[type] || '#f4f4f4'; // Default to white
+
     if (attendanceLog.firstChild) {
         attendanceLog.insertBefore(li, attendanceLog.firstChild);
     } else {
         attendanceLog.appendChild(li);
     }
     
-    // Keep log limited to 10 entries for cleanliness
-    while (attendanceLog.children.length > 10) {
+    while (attendanceLog.children.length > 15) {
         attendanceLog.removeChild(attendanceLog.lastChild);
     }
 }
 
+// --- Core Attendance Logic ---
 
 /**
- * --- MOCK FACIAL RECOGNITION LOGIC ---
- * This function simulates calling a facial recognition API.
- * It randomly returns a recognized ID or null (unidentified).
+ * Captures a frame from the video, sends it to the backend, and handles the response.
  */
-function mockFacialRecognition() {
-    // 10% chance of no face or unidentified
-    const chance = Math.random();
-    if (chance < 0.1) {
-        return null; // Face unidentifiable
+async function processFrameForAttendance() {
+    if (isProcessing) {
+        return; // Don't send a new request if one is already in flight
     }
+    isProcessing = true;
 
-    // 90% chance of recognizing a random student
-    const randomIndex = Math.floor(Math.random() * MOCK_STUDENT_IDS.length);
-    return MOCK_STUDENT_IDS[randomIndex];
-}
+    // 1. Capture frame from video to canvas
+    canvas.width = videoFeed.videoWidth;
+    canvas.height = videoFeed.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
 
+    // 2. Get image data as Base64 string
+    const imageDataUrl = canvas.toDataURL('image/jpeg');
 
-/**
- * Main attendance marking loop logic.
- */
-function runAttendanceCheck() {
-    const recognizedId = mockFacialRecognition();
+    try {
+        // 3. Send image data to the backend API
+        const response = await fetch('/api/mark_attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image_data: imageDataUrl }),
+        })
 
-    if (recognizedId) {
-        if (attendanceRecords.has(recognizedId)) {
-            // Case 1: Already marked present
-            updateStatus(`Student ${recognizedId}: You have already been marked present`, 'already-present');
-            logAttendance(`⚠️ ${recognizedId} tried checking in again.`, false);
-        } else {
-            // Case 2: New student recognized and marked present
-            attendanceRecords.add(recognizedId);
-            updateStatus(`Student ${recognizedId} marked present`, 'present');
-            logAttendance(`✅ ${recognizedId} marked present.`, true);
+        const result = await response.json();
+        console.log('Server response:', result); // Log the result here
+        // 4. Process the response from the backend
+        switch (result.status) {
+            case 'present':
+                updateStatus(`Welcome, ${result.student_name}! Marked present.`, 'present');
+                logAttendance(`✅ ${result.student_name} (${result.student_id}) marked present.`, 'success');
+                break;
+            case 'already_present':
+                updateStatus(`${result.student_name} is already marked present.`, 'already-present');
+                logAttendance(`⚠️ ${result.student_name} (${result.student_id}) already present.`, 'warning');
+                break;
+            case 'unidentifiable':
+                updateStatus(`${result.message}`, 'unidentifiable');
+                break;
+            case 'no_active_period':
+                updateStatus(result.message, 'error');
+                logAttendance(`❌ System paused: ${result.message}`, 'error');
+                // Stop the loop if there's no active class
+                if (recognitionInterval) clearInterval(recognitionInterval); 
+                break;
+            default:
+                 updateStatus('An unknown response was received.', 'error');
+                 break;
         }
-    } else {
-        // Case 3: Face unidentifiable or not present
-        updateStatus('Face unidentifiable, please try again.', 'unidentifiable');
+
+    } catch (error) {
+        console.error('Error sending frame for recognition:', error);
+        updateStatus('Connection error. Could not reach server.', 'error');
+        logAttendance('❌ Network or Server Error.', 'error');
+        // Stop the loop on connection error to prevent spamming
+        if (recognitionInterval) clearInterval(recognitionInterval); 
+    } finally {
+        // 5. Reset status and allow the next API call
+        setTimeout(() => {
+            if (videoFeed.srcObject) { // Only reset if camera is still active
+                updateStatus('Awaiting Facial Presence...', 'initial');
+            }
+            isProcessing = false;
+        }, 2000); // Display result for 2 seconds before resetting
     }
-
-    // After processing, reset the status back to 'Awaiting' after a short delay
-    setTimeout(() => {
-        updateStatus('Awaiting Facial Presence...', 'initial');
-    }, 2500); // Display the result for 2.5 seconds
 }
-
 
 // --- Initialization and Event Listeners ---
+/**
+ * Stops the camera and the recognition interval.
+ */
+function stopCameraAndLoop() {
+    if (recognitionInterval) {
+        clearInterval(recognitionInterval);
+        recognitionInterval = null;
+    }
+    if (videoFeed.srcObject) {
+        videoFeed.srcObject.getTracks().forEach(track => track.stop());
+        videoFeed.srcObject = null;
+    }
+}
 
 /**
  * Initializes the camera stream and starts the recognition loop.
@@ -142,71 +180,51 @@ async function initializeCamera() {
         videoFeed.onloadedmetadata = () => {
             videoFeed.play();
             updateStatus('Awaiting Facial Presence...', 'initial');
+            logAttendance('System initialized. Starting face scan...', 'success');
 
-            // Start the mock recognition loop only after video is playing
-            if (!recognitionLoopInterval) {
-                // Check every 3 seconds for a face
-                recognitionLoopInterval = setInterval(runAttendanceCheck, 3000); 
+            // Start the recognition loop
+            if (!recognitionInterval) {
+                recognitionInterval = setInterval(processFrameForAttendance, CAPTURE_INTERVAL_MS);
             }
         };
     } catch (err) {
         console.error('Error accessing the camera: ', err);
-        updateStatus('CAMERA ERROR: Please allow camera access and refresh.', 'unidentifiable');
+        updateStatus('CAMERA ERROR: Please allow camera access and refresh.', 'error');
+        logAttendance('❌ Failed to access camera. Check browser permissions.', 'error');
     }
 }
 
 // Start initialization on page load
 window.onload = initializeCamera;
 
+// Stop camera when the user navigates away from the page
+window.onbeforeunload = stopCameraAndLoop;
 
-// Event listeners for header buttons
+// Event listeners for header/navigation buttons
 backButton.addEventListener('click', () => {
-    // Stop the loop and the stream before navigating back
-    clearInterval(recognitionLoopInterval);
-    if (videoFeed.srcObject) {
-        videoFeed.srcObject.getTracks().forEach(track => track.stop());
-    }
-    // Mock navigation back (in a real app, this would redirect)
+    stopCameraAndLoop();
     window.history.back();
 });
 
 profileBtn.addEventListener('click', () => {
-    // REDIRECTION: Profile button takes user to lectureside_profile.html
-    clearInterval(recognitionLoopInterval);
-    if (videoFeed.srcObject) {
-        videoFeed.srcObject.getTracks().forEach(track => track.stop());
-    }
+    stopCameraAndLoop();
     window.location.href = 'lectureside_profile.html';
 });
 
-logoutBtn.addEventListener('click', () => {
-    // Confirmation prompt (shows both Yes/No buttons via showModal logic)
-    showModal('Are you sure you want to log out?');
-});
-
-// Event listener for the DUT Logo link (if it's in the DOM, which we ensure in HTML update)
 if (dutLogoLink) {
     dutLogoLink.addEventListener('click', (e) => {
-        // Stop camera and loop before navigation
-        clearInterval(recognitionLoopInterval);
-        if (videoFeed.srcObject) {
-            videoFeed.srcObject.getTracks().forEach(track => track.stop());
-        }
-        // REDIRECTION: DUT logo takes user to lectureside_dashboard.html
+        stopCameraAndLoop();
         window.location.href = 'lectureside_dashboard.html';
     });
 }
 
+logoutBtn.addEventListener('click', () => {
+    showModal('Are you sure you want to log out?');
+});
 
-// Event listener for the modal 'Yes' button (Logout Confirmation)
 modalCloseBtn.addEventListener('click', () => {
     if (modalText.textContent.includes('Are you sure you want to log out?')) {
-        // Stop camera and loop
-        clearInterval(recognitionLoopInterval);
-        if (videoFeed.srcObject) {
-            videoFeed.srcObject.getTracks().forEach(track => track.stop());
-        }
-        // REDIRECTION: Logout Yes button takes user to the root login page
+        stopCameraAndLoop();
         sessionStorage.clear();
         localStorage.clear();
         window.location.href = '/'; 
@@ -214,10 +232,8 @@ modalCloseBtn.addEventListener('click', () => {
     hideModal();
 });
 
-// Event listener for the modal 'No' button
 if (modalNoBtn) {
     modalNoBtn.addEventListener('click', () => {
-        // Simply hide the modal and stay on the current page
         hideModal();
     });
 }
