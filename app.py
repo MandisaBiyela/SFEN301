@@ -1160,24 +1160,24 @@ def update_student(student_number):
     Class_Register.query.filter_by(student_number=student_number).delete()
     module_codes = data.get('modules', [])
     if module_codes:
-        # Create a single registration record with all modules
-        semester = '2'
-        register_id = f"{student_number}-{semester}-{datetime.now().strftime('%Y')}"
-        
-        # Check if register_id already exists
-        if Class_Register.query.filter_by(register_id=register_id).first():
-            register_id = f"{student_number}-{semester}-{datetime.now().strftime('%Y')}-{datetime.now().strftime('%H%M%S')}"
-        
-        # Store all module codes as comma-separated string
-        modules_string = ','.join(module_codes)
-        
-        new_register = Class_Register(
-            student_number=student_number,
-            register_id=register_id,
-            subject_code=modules_string,
-            semester=semester
-        )
-        db.session.add(new_register)
+            # Verify all modules exist before registering student
+            for code in module_codes:
+                if not Module.query.filter_by(module_code=code).first():
+                    db.session.rollback()
+                    return jsonify({'error': f'Module {code} does not exist'}), 400
+            
+                # Create a single registration record
+                semester = '2'
+                # Create a unique register ID
+                register_id = f"{code}-{semester}-{datetime.now().strftime('%Y')}"
+            
+                new_register = Class_Register(
+                    student_number=student_number,
+                    register_id=register_id,
+                    subject_code=code,
+                    semester=semester
+                )
+                db.session.add(new_register)
 
     try:
         db.session.commit()

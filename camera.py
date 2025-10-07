@@ -34,8 +34,8 @@ def compute_embedding(image_path):
     """
     embedding = DeepFace.represent(
         img_path=image_path,
-        model_name="Facenet512",  # can switch to Facenet or VGG-Face for speed
-        detector_backend="retinaface",
+        model_name="SFace",         # Switched to a lightweight model
+        detector_backend="ssd",     # Switched to the fastest detector     
         enforce_detection=False
     )
     return np.array(embedding[0]["embedding"], dtype=np.float32)

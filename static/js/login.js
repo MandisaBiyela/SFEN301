@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (userType === 'lecturer') {
                 if (username === lecturerCredentials.username && password === lecturerCredentials.password) {
                     alert('Lecturer login successful!');
-                    window.location.href = 'lecturer_dashboard.html';
+                    window.location.href = 'lecturerside_dashboard.html';
                 } else {
                     alert('Invalid Lecturer ID or password.');
                 }
