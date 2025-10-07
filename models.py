@@ -101,7 +101,7 @@ class Module(db.Model):
     __tablename__ = 'module'
     id = db.Column(db.Integer, primary_key=True)
     module_code = db.Column(db.String(50), unique=True, nullable=False)
-    module_name = db.Column(db.String(100), nullable=False)
+    module_name = db.Column(db.String(100), unique=True, nullable=False)
     lecturer_number = db.Column(db.String(50), db.ForeignKey('lecturers.lecturer_number'), nullable=False)
 
     # Relationship to lecturer
