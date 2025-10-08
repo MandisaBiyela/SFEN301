@@ -213,6 +213,7 @@ profileBtn.addEventListener('click', () => {
 
 if (dutLogoLink) {
     dutLogoLink.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent default link behavior before stopping camera
         stopCameraAndLoop();
         window.location.href = 'lectureside_dashboard.html';
     });
@@ -222,14 +223,22 @@ logoutBtn.addEventListener('click', () => {
     showModal('Are you sure you want to log out?');
 });
 
-modalCloseBtn.addEventListener('click', () => {
+modalCloseBtn.addEventListener('click', async () => {
+      // This button serves as the "Confirm" action for the modal.
     if (modalText.textContent.includes('Are you sure you want to log out?')) {
         stopCameraAndLoop();
-        sessionStorage.clear();
-        localStorage.clear();
-        window.location.href = '/'; 
+        try {
+            // Call the backend to properly end the session
+            await fetch('/api/logout', { method: 'POST' });
+        } catch (error) {
+            console.error('API logout call failed, redirecting anyway.', error);
+        } finally {
+            // Redirect to login page regardless of API call success
+            window.location.href = '/'; 
+        }
+    } else {
+        hideModal();
     }
-    hideModal();
 });
 
 if (modalNoBtn) {

@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify, flash
+from flask import Flask, render_template, request, jsonify, flash, session, redirect, url_for
+from functools import wraps
 import os
 from datetime import datetime
 import base64
@@ -64,12 +65,120 @@ def compute_embedding(image_bytes):
         print(f"Error in compute_embedding: {e}")
         return None
 
+# --- Authentication Decorator ---
+def login_required(f):
+    """
+    Decorator to protect routes that require lecturer authentication.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'lecturer_number' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 #Login Page as the first page//////////////////////////////////////////////////
 
 @app.route('/')
 def login():
     return render_template('login.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """
+    API endpoint to handle lecturer login
+    """
+    try:
+        data = request.get_json()
+        user_type = data.get('user_type')
+        username = data.get('username')
+        password = data.get('password')
+
+        if not all([user_type, username, password]):
+            return jsonify({'error': 'All fields are required'}), 400
+
+        if user_type == 'admin':
+            # Admin login (hardcoded for now - you should improve this)
+            if username == 'admin' and password == 'password123':
+                session['user_type'] = 'admin'
+                session['username'] = username
+                return jsonify({
+                    'success': True,
+                    'redirect': '/admin_dashboard.html',
+                    'message': 'Admin login successful'
+                }), 200
+            else:
+                return jsonify({'error': 'Invalid Admin ID or password'}), 401
+
+        elif user_type == 'lecturer':
+            # Lecturer login - verify against database
+            lecturer = Lecturer.query.filter_by(lecturer_number=username).first()
+            
+            if not lecturer:
+                return jsonify({'error': 'Invalid Lecturer ID or password'}), 401
+            
+            # For now, using a simple password check
+            # In production, you should hash passwords and store them securely
+            # For demo purposes, we'll accept 'password123' for all lecturers
+            if password != 'password123':
+                return jsonify({'error': 'Invalid Lecturer ID or password'}), 401
+            
+            # Set session data
+            session['user_type'] = 'lecturer'
+            session['lecturer_number'] = lecturer.lecturer_number
+            session['lecturer_name'] = lecturer.name
+            session['lecturer_surname'] = lecturer.surname
+            session['lecturer_email'] = lecturer.email
+            
+            return jsonify({
+                'success': True,
+                'redirect': '/lectureside_dashboard.html',
+                'message': f'Welcome, {lecturer.name} {lecturer.surname}',
+                'lecturer': {
+                    'lecturer_number': lecturer.lecturer_number,
+                    'name': lecturer.name,
+                    'surname': lecturer.surname,
+                    'email': lecturer.email
+                }
+            }), 200
+
+        return jsonify({'error': 'Invalid user type'}), 400
+
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({'error': 'An error occurred during login'}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """
+    API endpoint to handle logout
+    """
+    session.clear()
+    return jsonify({'success': True, 'message': 'Logged out successfully'}), 200
+
+@app.route('/api/current_user', methods=['GET'])
+def get_current_user():
+    """
+    API endpoint to get current logged-in user information
+    """
+    if 'lecturer_number' in session:
+        return jsonify({
+            'logged_in': True,
+            'user_type': 'lecturer',
+            'lecturer_number': session['lecturer_number'],
+            'name': session.get('lecturer_name'),
+            'surname': session.get('lecturer_surname'),
+            'email': session.get('lecturer_email')
+        }), 200
+    elif 'user_type' in session and session['user_type'] == 'admin':
+        return jsonify({
+            'logged_in': True,
+            'user_type': 'admin',
+            'username': session.get('username')
+        }), 200
+    else:
+        return jsonify({'logged_in': False}), 200
 
 @app.route('/forgot_password.html')
 def forgot_password():
@@ -79,37 +188,45 @@ def forgot_password():
 def new_password():
     return render_template('new_password.html')
 
-
 #LECTURE SIDE STARTS HERE BAAFETHU///////////////////////////////////////////////////////////////////////////
 
 @app.route('/lectureside_attendance.html')
+@login_required
 def lectureside_attendance():
     return render_template('lectureside_attendance.html')
 
 @app.route('/lectureside_capture.html')
+@login_required
 def lectureside_capture():
     return render_template('lectureside_capture.html')
 
 
 @app.route('/lectureside_dashboard.html')
+@login_required
 def lectureside_dashboard():
     return render_template('lectureside_dashboard.html')
 
 @app.route('/lectureside_modules.html')
+@login_required
 def lectureside_modules():
     return render_template('lectureside_modules.html')
 
 @app.route('/lectureside_periods.html')
+@login_required
 def lectureside_periods():
     return render_template('lectureside_periods.html')
 
 @app.route('/lectureside_profile.html')
+@login_required
 def lectureside_profile():
     return render_template('lectureside_profile.html')
 
+@app.route('/lectureside_statistics.html')
+@login_required
+def lectureside_statistics():
+    return render_template('lectureside_statistics.html')
 
 #LECTURE SIDE ENDS HERE BAFETHU//////////////////////////////////////////////////////////////////////////
-
 
 
 
@@ -284,6 +401,290 @@ def register_student():
 @app.route('/attendance.html')
 def attendance():
     return render_template('attendance.html')
+
+# --- LECTURER-SPECIFIC API ENDPOINTS ---
+
+@app.route('/api/lecturer/modules', methods=['GET'])
+@login_required
+def get_lecturer_modules():
+    """
+    API endpoint to get modules for the currently logged-in lecturer.
+    """
+    try:
+        lecturer_number = session.get('lecturer_number')
+        if not lecturer_number:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        modules = Module.query.filter_by(lecturer_number=lecturer_number).order_by(Module.module_name).all()
+        
+        module_list = []
+        for m in modules:
+            # Count students registered for this module
+            class_registers = Class_Register.query.all()
+            student_count = 0
+            for register in class_registers:
+                if register.subject_code:
+                    module_codes = [code.strip() for code in register.subject_code.split(',')]
+                    if m.module_code in module_codes:
+                        student_count += 1
+            
+            module_list.append({
+                'lecturer': m.lecturer_number,
+                'name': m.module_name,
+                'code': m.module_code,
+                'student_count': student_count
+            })
+        
+        return jsonify(module_list)
+
+    except Exception as e:
+        print(f"Error fetching lecturer modules: {e}")
+        return jsonify({'error': 'Error fetching module data'}), 500
+
+@app.route('/api/lecturer/periods', methods=['GET'])
+@login_required
+def get_lecturer_periods():
+    """
+    API endpoint to get class periods for the currently logged-in lecturer.
+    """
+    try:
+        lecturer_number = session.get('lecturer_number')
+        if not lecturer_number:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        # 1. Get the module codes for the logged-in lecturer
+        lecturer_module_codes = [m.module_code for m in Module.query.filter_by(lecturer_number=lecturer_number).all()]
+        if not lecturer_module_codes:
+            return jsonify([]) # Return empty list if lecturer has no modules
+
+        # 2. Get all class periods and filter them in Python
+        all_periods = Class_Period.query.order_by(Class_Period.day_of_week, Class_Period.period_start_time).all()
+        lecturer_periods = []
+        
+        for p in all_periods:
+            register = p.register  # Use the relationship to get the register
+            if register and register.subject_code:
+                # Check if any of the period's modules are taught by this lecturer
+                period_module_codes = [code.strip() for code in register.subject_code.split(',')]
+                if any(code in lecturer_module_codes for code in period_module_codes):
+                    venue = p.venue
+                    module = register.module # Use relationship
+                    lecturer_periods.append({
+                        'id': p.id,
+                        'period_id': p.period_id,
+                        'module_code': module.module_code if module else 'N/A',
+                        'module_name': module.module_name if module else 'N/A',
+                        'period_start_time': p.period_start_time,
+                        'period_end_time': p.period_end_time,
+                        'day_of_week': p.day_of_week,
+                        'venue_name': venue.venue_name if venue else 'Unknown',
+                    })
+        
+        return jsonify(lecturer_periods)
+
+    except Exception as e:
+        print(f"Error fetching lecturer periods: {e}")
+        return jsonify({'error': 'Error fetching period data'}), 500
+
+@app.route('/api/lecturer/attendance_statistics', methods=['GET'])
+@login_required
+def get_lecturer_attendance_statistics():
+    """
+    API endpoint to get comprehensive attendance statistics for all modules 
+    taught by the currently logged-in lecturer.
+    """
+    try:
+        lecturer_number = session.get('lecturer_number')
+        if not lecturer_number:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        # Get all modules taught by this lecturer
+        lecturer_modules = Module.query.filter_by(lecturer_number=lecturer_number).all()
+        
+        statistics = []
+        
+        for module in lecturer_modules:
+            # Get all students registered for this module
+            class_registers = Class_Register.query.filter_by(subject_code=module.module_code).all()
+            registered_students = set([reg.student_number for reg in class_registers])
+            total_students = len(registered_students)
+            
+            # Get all class periods for this module
+            module_periods = Class_Period.query.join(Class_Register).filter(
+                Class_Register.subject_code == module.module_code
+            ).all()
+            
+            total_periods = len(module_periods)
+            
+            # Calculate attendance statistics
+            total_possible_attendance = total_students * total_periods
+            
+            # Get all attendance records for this module's periods
+            period_ids = [p.id for p in module_periods]
+            attendance_records = Attendance.query.filter(
+                Attendance.class_period_id.in_(period_ids)
+            ).all()
+            
+            total_actual_attendance = len(attendance_records)
+            
+            # Calculate overall attendance rate
+            overall_rate = 0
+            if total_possible_attendance > 0:
+                overall_rate = (total_actual_attendance / total_possible_attendance) * 100
+            
+            # Get recent attendance trends (last 5 periods)
+            recent_periods = sorted(module_periods, 
+                                   key=lambda p: (p.day_of_week, p.period_start_time), 
+                                   reverse=True)[:5]
+            
+            recent_attendance = []
+            for period in recent_periods:
+                period_attendance_count = Attendance.query.filter_by(
+                    class_period_id=period.id
+                ).count()
+                
+                period_rate = 0
+                if total_students > 0:
+                    period_rate = (period_attendance_count / total_students) * 100
+                
+                recent_attendance.append({
+                    'period_id': period.period_id,
+                    'day': period.day_of_week,
+                    'time': f"{period.period_start_time} - {period.period_end_time}",
+                    'venue': period.venue.venue_name if period.venue else 'Unknown',
+                    'attendance_count': period_attendance_count,
+                    'attendance_rate': round(period_rate, 2)
+                })
+            
+            # Get student attendance breakdown
+            student_breakdown = []
+            for student_number in registered_students:
+                student = Student.query.filter_by(student_number=student_number).first()
+                if student:
+                    student_attendance = Attendance.query.filter(
+                        Attendance.user_id == student_number,
+                        Attendance.class_period_id.in_(period_ids)
+                    ).count()
+                    
+                    student_rate = 0
+                    if total_periods > 0:
+                        student_rate = (student_attendance / total_periods) * 100
+                    
+                    student_breakdown.append({
+                        'student_number': student_number,
+                        'name': f"{student.student_name} {student.student_surname}",
+                        'attended': student_attendance,
+                        'total_periods': total_periods,
+                        'attendance_rate': round(student_rate, 2),
+                        'status': 'Good' if student_rate >= 80 else 'Warning' if student_rate >= 60 else 'Critical'
+                    })
+            
+            # Sort students by attendance rate (lowest first for attention)
+            student_breakdown.sort(key=lambda x: x['attendance_rate'])
+            
+            statistics.append({
+                'module_code': module.module_code,
+                'module_name': module.module_name,
+                'total_students': total_students,
+                'total_periods': total_periods,
+                'overall_attendance_rate': round(overall_rate, 2),
+                'total_attendance_records': total_actual_attendance,
+                'recent_attendance': recent_attendance,
+                'student_breakdown': student_breakdown
+            })
+        
+        return jsonify({
+            'lecturer_name': f"{session.get('lecturer_name')} {session.get('lecturer_surname')}",
+            'total_modules': len(lecturer_modules),
+            'statistics': statistics
+        })
+        
+    except Exception as e:
+        print(f"Error fetching lecturer statistics: {e}")
+        return jsonify({'error': 'Error fetching statistics'}), 500
+
+@app.route('/api/lecturer/module_statistics/<module_code>', methods=['GET'])
+@login_required
+def get_module_detailed_statistics(module_code):
+    """
+    API endpoint to get detailed statistics for a specific module.
+    """
+    try:
+        lecturer_number = session.get('lecturer_number')
+        if not lecturer_number:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        # Verify lecturer teaches this module
+        module = Module.query.filter_by(
+            module_code=module_code, 
+            lecturer_number=lecturer_number
+        ).first()
+        
+        if not module:
+            return jsonify({'error': 'Module not found or access denied'}), 404
+        
+        # Get all students registered for this module
+        class_registers = Class_Register.query.filter_by(subject_code=module_code).all()
+        registered_students = [reg.student_number for reg in class_registers]
+        
+        # Get all periods for this module
+        module_periods = Class_Period.query.join(Class_Register).filter(
+            Class_Register.subject_code == module_code
+        ).all()
+        
+        # Detailed period-by-period breakdown
+        period_details = []
+        for period in module_periods:
+            attendance_records = Attendance.query.filter_by(
+                class_period_id=period.id
+            ).all()
+            
+            present_students = [a.user_id for a in attendance_records]
+            absent_students = [s for s in registered_students if s not in present_students]
+            
+            period_details.append({
+                'period_id': period.period_id,
+                'day': period.day_of_week,
+                'time': f"{period.period_start_time} - {period.period_end_time}",
+                'venue': period.venue.venue_name if period.venue else 'Unknown',
+                'total_students': len(registered_students),
+                'present_count': len(present_students),
+                'absent_count': len(absent_students),
+                'attendance_rate': round((len(present_students) / len(registered_students) * 100), 2) if registered_students else 0,
+                'present_students': present_students,
+                'absent_students': absent_students
+            })
+        
+        # Sort by day and time
+        day_order = {'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7}
+        period_details.sort(key=lambda x: (day_order.get(x['day'], 8), x['time']))
+        
+        # Calculate weekly pattern
+        weekly_pattern = {}
+        for period in period_details:
+            day = period['day']
+            if day not in weekly_pattern:
+                weekly_pattern[day] = {'total_periods': 0, 'avg_rate': 0, 'rates': []}
+            weekly_pattern[day]['total_periods'] += 1
+            weekly_pattern[day]['rates'].append(period['attendance_rate'])
+        
+        for day, data in weekly_pattern.items():
+            data['avg_rate'] = round(sum(data['rates']) / len(data['rates']), 2) if data['rates'] else 0
+            del data['rates']
+        
+        return jsonify({
+            'module_code': module.module_code,
+            'module_name': module.module_name,
+            'total_students': len(registered_students),
+            'total_periods': len(module_periods),
+            'period_details': period_details,
+            'weekly_pattern': weekly_pattern
+        })
+        
+    except Exception as e:
+        print(f"Error fetching module statistics: {e}")
+        return jsonify({'error': 'Error fetching module statistics'}), 500
+
 
 # --- LECTURER API ENDPOINTS ---
 
@@ -804,6 +1205,7 @@ def get_module_register_summary(module_code):
         return jsonify({'error': 'Error fetching summary data'}), 500
 
 # --- CLASS REGISTER MANAGEMENT ENDPOINTS ---
+
 @app.route('/api/register_students', methods=['GET'])
 def get_student_register():
     """
@@ -1280,17 +1682,30 @@ def cosine_similarity(vec1, vec2):
 
 def is_period_active_now():
     """
-    Checks if a class period is active using SQLAlchemy.
+    Checks if a class period is active for the currently logged-in lecturer.
     Returns the active Class_Period object or None.
     """
+    # 1. Ensure a lecturer is logged in
+    lecturer_id = session.get('lecturer_number')
+    if not lecturer_id:
+        return None
+
     now = datetime.now()
     day_name = now.strftime('%A')
     current_time_str = now.strftime('%H:%M')
     
-    active_period = Class_Period.query.filter(
+    # 2. Build the query with necessary JOINS
+    active_period = Class_Period.query.join(
+        Class_Register, Class_Period.class_register == Class_Register.register_id
+    ).join(
+        Module, Class_Register.subject_code == Module.module_code
+    ).filter(
+        # Filter by time and day
         Class_Period.day_of_week == day_name,
         Class_Period.period_start_time <= current_time_str,
-        Class_Period.period_end_time > current_time_str
+        Class_Period.period_end_time > current_time_str,
+        # Crucially, filter by the logged-in lecturer's ID
+        Module.lecturer_number == lecturer_id
     ).first()
     
     return active_period

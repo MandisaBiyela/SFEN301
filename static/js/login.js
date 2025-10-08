@@ -6,9 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const usernameLabel = document.getElementById('username-label');
     const usernameInput = document.getElementById('username');
     const forgotPasswordContainer = document.querySelector('.forgot-password-container');
-    // forgotPasswordLink no longer needs alert, so no event listener for it here
+    const errorMessageDiv = document.getElementById('login-error'); // For displaying errors
 
-    let userType = 'admin'; // Default to admin
+    let userType = 'lecturer'; // Default to lecturer
 
     function setActiveTab(activeTab, otherTab) {
         activeTab.classList.add('active');
@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Set initial state for Admin
+    // Set initial state for Lecturer
     if (adminTab && lecturerTab && usernameLabel && usernameInput && forgotPasswordContainer) {
+        setActiveTab(lecturerTab, adminTab);
         updateFormFields(userType);
 
         adminTab.addEventListener('click', function() {
@@ -45,30 +46,63 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (loginForm) {
-        loginForm.addEventListener('submit', function(event) {
+        loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
+            // Clear previous errors
+            if (errorMessageDiv) {
+                errorMessageDiv.textContent = '';
+                errorMessageDiv.style.display = 'none';
+            }
 
             const username = usernameInput.value;
             const password = document.getElementById('password').value;
+            const loginButton = loginForm.querySelector('button[type="submit"]');
 
-            // Dummy credentials for demonstration
-            const adminCredentials = { username: 'admin', password: 'password123' };
-            const lecturerCredentials = { username: 'lecturer', password: 'password123' };
+            // Disable button to prevent multiple submissions
+            loginButton.disabled = true;
+            loginButton.textContent = 'Logging In...';
 
-            if (userType === 'admin') {
-                if (username === adminCredentials.username && password === adminCredentials.password) {
-                    alert('Admin login successful!');
-                    window.location.href = 'admin_dashboard.html';
-                } else {
-                    alert('Invalid Admin ID or password.');
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_type: userType,
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Handle server-side errors (e.g., 400, 401, 500)
+                    throw new Error(data.error || 'An unknown error occurred.');
                 }
-            } else if (userType === 'lecturer') {
-                if (username === lecturerCredentials.username && password === lecturerCredentials.password) {
-                    alert('Lecturer login successful!');
-                    window.location.href = 'lectureside_dashboard.html';
+
+                if (data.success) {
+                    // Redirect on successful login
+                    window.location.href = data.redirect;
                 } else {
-                    alert('Invalid Lecturer ID or password.');
+                    // Fallback for non-error responses that are not a success
+                    throw new Error(data.error || 'Login failed. Please try again.');
                 }
+
+            } catch (error) {
+                // Display the error message on the page
+                if (errorMessageDiv) {
+                    errorMessageDiv.textContent = error.message;
+                    errorMessageDiv.style.display = 'block';
+                } else {
+                    // Fallback to alert if the error div doesn't exist
+                    alert(error.message);
+                }
+            } finally {
+                // Re-enable the button
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
             }
         });
     }
@@ -79,13 +113,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (forgotPasswordForm) {
         forgotPasswordForm.addEventListener('submit', function(event) {
             event.preventDefault();
-
             const lecturerId = document.getElementById('lecturer-id').value.trim();
-
             if (lecturerId) {
                 alert('Reset Link Sent, check your email inbox for the link to reset your password.');
-                // Redirect to login page after alert
-                window.location.href = 'login.html';
+                window.location.href = '/'; // Redirect to login page
             } else {
                 alert('Please enter your Lecturer ID.');
             }
@@ -98,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (newPasswordForm) {
         newPasswordForm.addEventListener('submit', function(event) {
             event.preventDefault();
-
             const newPassword = document.getElementById('new-password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
 
@@ -111,8 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Password must be at least 6 characters long.');
                 return;
             }
-
-            // In a real app, send new password + token securely to server here
 
             alert('Your password has been successfully reset. You can now log in with your new password.');
             window.location.href = '/';

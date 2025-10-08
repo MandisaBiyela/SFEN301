@@ -1,25 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Mock Data ---
-    const CURRENT_LECTURER_ID = 'L001'; 
+
+    let allPeriods = []; // This will hold the data from the API
     
-    const ONE_WEEK_AGO = new Date();
-    ONE_WEEK_AGO.setDate(ONE_WEEK_AGO.getDate() - 7); 
-
-    // NOTE: Added isLongTermCancelled property to track permanent cancellation status.
-    let mockPeriods = [
-        { id: '1', moduleCode: 'INF370', moduleName: 'Information Systems', day: 'Monday', startTime: '09:00', endTime: '10:45', venue: 'MLT 101', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: ONE_WEEK_AGO.toISOString() },
-        { id: '2', moduleCode: 'INF410', moduleName: 'Advanced Networking', day: 'Monday', startTime: '13:00', endTime: '14:45', venue: 'L1 PCLab', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        { id: '3', moduleCode: 'ITS320', moduleName: 'IT Strategy', day: 'Tuesday', startTime: '11:00', endTime: '12:45', venue: 'L2 PCLab', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        { id: '4', moduleCode: 'BIT400', moduleName: 'Business Intelligence', day: 'Wednesday', startTime: '14:00', endTime: '15:45', venue: 'CLT 204', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        { id: '5', moduleCode: 'INF370', moduleName: 'Information Systems', day: 'Thursday', startTime: '10:00', endTime: '11:45', venue: 'CLT 204', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        { id: '6', moduleCode: 'ITS320', moduleName: 'IT Strategy', day: 'Friday', startTime: '08:00', endTime: '09:45', venue: 'MLT 101', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        // Weekend Classes added for L001
-        { id: '7', moduleCode: 'ITS320', moduleName: 'IT Strategy', day: 'Saturday', startTime: '09:30', endTime: '11:30', venue: 'Online / Zoom', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        { id: '8', moduleCode: 'BIT400', moduleName: 'Business Intelligence', day: 'Sunday', startTime: '16:00', endTime: '17:30', venue: 'MLT 101', lecturerId: 'L001', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() },
-        // Another lecturer's class (ignored by the filter)
-        { id: '9', moduleCode: 'BIT400', moduleName: 'Business Intelligence', day: 'Friday', startTime: '12:00', endTime: '13:45', venue: 'L2 PCLab', lecturerId: 'L002', isCancelled: false, isLongTermCancelled: false, createdDate: new Date().toISOString() }, 
-    ];
-
     const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     // DOM elements
@@ -70,21 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    const logoutBtnn = document.querySelector('.logout-btn');
-    const profileBtnn = document.querySelector('.profile-btn');
-    if (logoutBtnn) {
-        logoutBtn.addEventListener('click', function () {
-            const confirmLogout = confirm("Are you sure you want to log out?");
-            if (confirmLogout) {
-                // Clear session/local storage if used
-                sessionStorage.clear();
-                localStorage.clear();
-
-                // Redirect to login page
-                window.location.href = '/';
-            }
-            // else do nothing if user cancels
-        });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click',handleLogout);
     }
 
     if (profileBtn) {
@@ -93,21 +62,118 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'lectureside_profile.html';
         });
     }
+    // Standard back button function
+    if (backButton) backButton.addEventListener('click', () => window.history.back());
+ 
 
-    const backButtonn = document.getElementById('back-button');
-    
-    // *** FIX APPLIED HERE: The line below was referencing an undefined variable 'backToModulesBtn' ***
-    // REMOVED: backToModulesBtn.addEventListener('click', () => switchView('modules')); 
-    
-    if (backButtonn) {
-        // Standard back button function
-        backButtonn.addEventListener('click', function() { // Used backButtonn for consistency
-            window.history.back();
+    // --- API Data Fetching ---
+    /**
+     * Fetches the lecturer's periods from the backend.
+     */
+    async function fetchLecturerPeriods() {
+        try {
+            const response = await fetch('/api/lecturer/periods');
+            if (!response.ok) {
+                throw new Error('Could not load timetable from server.');
+            }
+            const periods = await response.json();
+            // Add client-side state for cancellation simulation
+            return periods.map(p => ({
+                ...p,
+                isCancelled: false,
+                isLongTermCancelled: false
+            }));
+        } catch (error) {
+            console.error('Error fetching periods:', error);
+            timetableGrid.innerHTML = `<p class="text-red-500 p-4">${error.message}</p>`;
+            return [];
+        }
+    }
+
+    // --- Core Logic ---
+
+    /**
+     * NOTE: This function is a CLIENT-SIDE SIMULATION.
+     * Changes are NOT saved to the database and will reset on page refresh.
+     * A backend endpoint is required for persistence.
+     */
+    function updatePeriodStatus(id, newWeeklyStatus, newLongTermStatus) {
+        const periodIndex = allPeriods.findIndex(p => p.id.toString() === id.toString());
+        if (periodIndex !== -1) {
+            const period = allPeriods[periodIndex];
+            period.isCancelled = newWeeklyStatus;
+            period.isLongTermCancelled = newLongTermStatus;
+            
+            console.log(`[SIMULATION] Period ${id} updated: Weekly=${newWeeklyStatus}, Permanent=${newLongTermStatus}`);
+            renderTimetable();
+        }
+        modalBackdrop.style.display = 'none';
+        pendingPeriodId = null;
+        pendingActionType = null;
+        choiceContainer.style.display = 'none';
+    }
+
+    /**
+     * Renders the full timetable grid from the `allPeriods` state variable.
+     */
+    function renderTimetable() {
+        // Group periods by day
+        const scheduleByDay = {};
+        DAYS_OF_WEEK.forEach(day => {
+            scheduleByDay[day] = allPeriods
+                .filter(p => p.day_of_week === day)
+                .sort((a, b) => a.period_start_time.localeCompare(b.period_start_time));
+        });
+
+        timetableGrid.innerHTML = ''; // Clear previous content
+        DAYS_OF_WEEK.forEach(day => {
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'day-column';
+            dayColumn.innerHTML = `<div class="day-header">${day.toUpperCase()}</div>`;
+            
+            const periodsList = document.createElement('div');
+            periodsList.className = 'periods-list';
+
+            const periods = scheduleByDay[day];
+
+            if (periods.length === 0) {
+                periodsList.innerHTML = '<p class="no-periods">No classes scheduled.</p>';
+            } else {
+                periods.forEach(period => {
+                    const isCancelled = period.isCancelled || period.isLongTermCancelled;
+                    const card = document.createElement('div');
+                    card.className = isCancelled ? 'period-card period-cancelled' : 'period-card';
+                    card.innerHTML = `
+                        <strong>${period.module_code} - ${period.module_name}</strong>
+                        <p>${period.period_start_time} - ${period.period_end_time}</p>
+                        <p>Venue: ${period.venue_name}</p>
+                        ${period.isLongTermCancelled ? '<span class="status-tag permanent">PERMANENTLY CANCELLED</span>' : 
+                        (period.isCancelled ? '<span class="status-tag weekly">CANCELLED THIS WEEK</span>' : '')}
+                    `;
+                    card.addEventListener('click', () => handlePeriodClick(period));
+                    periodsList.appendChild(card);
+                });
+            }
+            dayColumn.appendChild(periodsList);
+            timetableGrid.appendChild(dayColumn);
         });
     }
 
-    // ===== Common: Navigation (omitted for brevity, assume existing handlers work) =====
+    // --- Event Handlers and Initialization ---
 
+    async function handleLogout() {
+      if (confirm("Are you sure you want to log out?")) {
+        await fetch('/api/logout', { method: 'POST' });
+        window.location.href = '/';
+      }
+    }
+    
+    async function initPage() {
+        allPeriods = await fetchLecturerPeriods();
+        renderTimetable();
+    }
+
+    /**
     // ===== Weekly Reset Simulation (Updated for long-term flag) =====
     function resetCancellationsWeekly() {
         const now = new Date();
@@ -125,12 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    /**
-        * Updates the status of a period and re-renders the timetable.
-        * @param {string} id - Period ID.
-        * @param {boolean} newWeeklyStatus - New value for isCancelled.
-        * @param {boolean} newLongTermStatus - New value for isLongTermCancelled.
-        */
+    
     function updatePeriodStatus(id, newWeeklyStatus, newLongTermStatus) {
         const periodIndex = mockPeriods.findIndex(p => p.id === id);
         if (periodIndex !== -1) {
@@ -153,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingActionType = null;
         choiceContainer.style.display = 'none';
     }
-
+        */
 
     /**
         * Shows the confirmation modal and sets up the handlers based on cancellation state.
@@ -255,76 +316,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showConfirmationModal(period);
     }
     
-    /**
-        * Filters periods for the current lecturer and groups them by day.
-        */
-    function getLecturerSchedule() {
-        const lecturerPeriods = mockPeriods.filter(p => p.lecturerId === CURRENT_LECTURER_ID);
-        lecturerPeriods.sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-        const schedule = {};
-        DAYS_OF_WEEK.forEach(day => {
-            schedule[day] = lecturerPeriods.filter(p => p.day === day);
-        });
-        return schedule;
-    }
-
-    /**
-        * Renders the full timetable grid.
-        */
-    function renderTimetable() {
-        const scheduleByDay = getLecturerSchedule();
-        timetableGrid.innerHTML = ''; // Clear previous content
-
-        DAYS_OF_WEEK.forEach(day => {
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'day-column';
-
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            dayHeader.textContent = day.toUpperCase();
-            dayColumn.appendChild(dayHeader);
-
-            const periodsList = document.createElement('div');
-            periodsList.className = 'periods-list';
-
-            const periods = scheduleByDay[day];
-
-            if (periods.length === 0) {
-                const noPeriods = document.createElement('p');
-                noPeriods.className = 'no-periods';
-                noPeriods.textContent = 'No classes scheduled.';
-                periodsList.appendChild(noPeriods);
-            } else {
-                periods.forEach(period => {
-                    const isCancelled = period.isCancelled || period.isLongTermCancelled;
-                    
-                    const card = document.createElement('div');
-                    card.className = isCancelled ? 'period-card period-cancelled' : 'period-card';
-                    card.innerHTML = `
-                        <strong>${period.moduleCode} - ${period.moduleName}</strong>
-                        <p>${period.startTime} - ${period.endTime}</p>
-                        <p>Venue: ${period.venue}</p>
-                        ${period.isLongTermCancelled ? '<span class="status-tag permanent">PERMANENTLY CANCELLED</span>' : 
-                        (period.isCancelled ? '<span class="status-tag weekly">CANCELLED THIS WEEK</span>' : '')}
-                    `;
-
-                    // Add click handler to toggle cancellation status
-                    card.addEventListener('click', () => {
-                        handlePeriodClick(period);
-                    });
-
-                    periodsList.appendChild(card);
-                });
-            }
-
-            dayColumn.appendChild(periodsList);
-            timetableGrid.appendChild(dayColumn);
-        });
-    }
     
-
-    // Initial load logic - These now execute without error, loading the mock-ups.
-    resetCancellationsWeekly(); // Simulates server-side weekly reset
-    renderTimetable();
+    // Initialize the page
+    initPage();
+    // resetCancellationsWeekly(); // Simulates server-side weekly reset
 });

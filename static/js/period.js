@@ -266,7 +266,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Add period entries for existing periods
         existingPeriods.forEach((period, index) => {
-            const periodStartDate = new Date(period.period_start_time);
             const day = period.day_of_week;
 
             addPeriodEntry(index + 1, day, period.period_start_time, period.period_end_time, period.venue_id);

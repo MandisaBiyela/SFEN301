@@ -1,38 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // =================================================================
-    // MOCK DATA FOR LECTURER DEMO
-    // =================================================================
-    const MOCK_MODULES = [
-        { code: 'PRT301S', name: 'Software Practical 3', lecturer: 'Nozipho Mbonambi' },
-        { code: 'ADS301S', name: 'Advanced Data Structures', lecturer: 'Nozipho Mbonambi' },
-        { code: 'WEB301S', name: 'Web Application Development', lecturer: 'Nozipho Mbonambi' },
-        { code: 'INF301S', name: 'Information Management', lecturer: 'John Doe' }, // Module not taught by this lecturer (should not appear)
-    ];
-
-    const MOCK_STUDENTS = {
-        'PRT301S': [
-            { student_number: '2210001', name: 'Sipho', surname: 'Zulu' },
-            { student_number: '2210002', name: 'Lindiwe', surname: 'Mkhize' },
-            { student_number: '2210003', name: 'Thabo', surname: 'Dlamini' },
-            { student_number: '2210004', name: 'Nomusa', surname: 'Ngcobo' }
-        ],
-        'ADS301S': [
-            { student_number: '2210005', name: 'Ayanda', surname: 'Cele' },
-            { student_number: '2210006', name: 'Sibusiso', surname: 'Ndlovu' },
-            { student_number: '2210007', name: 'Zinhle', surname: 'Shezi' }
-        ],
-        'WEB301S': [
-            { student_number: '2210008', name: 'Bongani', surname: 'Gwala' },
-            { student_number: '2210009', name: 'Precious', surname: 'Khoza' },
-            { student_number: '2210010', name: 'Xolani', surname: 'Sibiya' },
-            { student_number: '2210001', name: 'Sipho', surname: 'Zulu' } // Shared student
-        ]
-    };
-
-    // =================================================================
-    // DOM Elements and State
-    // =================================================================
+    // DOM Elements
     const moduleTableBody = document.getElementById('module-table-body');
     const studentTableBody = document.getElementById('student-table-body');
     const moduleListSection = document.getElementById('module-list-section');
@@ -42,111 +9,89 @@ document.addEventListener('DOMContentLoaded', function() {
     const backToModulesBtn = document.getElementById('back-to-modules-btn');
     const printButton = document.getElementById('print-register-btn');
     const backButton = document.getElementById('back-button');
-    
+    const logoutBtn = document.querySelector('.logout-btn');
 
-    let currentView = 'modules'; // 'modules' or 'students'
+    // State
+    let currentView = 'modules';
     let allModules = [];
     let currentModuleCode = null;
     let studentsInModule = [];
-    
-    // Hardcoded lecturer name for filtering mock data
-    const LECTURER_NAME = 'Nozipho Mbonambi';
 
-    // =================================================================
-    // Utility Functions
-    // =================================================================
+    // --- API Data Fetching ---
 
     /**
-     * Shows a temporary status message to the user.
-     * @param {string} message 
-     * @param {string} type - 'success' or 'error' (currently only one style is used)
+     * Fetches modules assigned to the logged-in lecturer from the backend.
      */
-    function showStatusMessage(message, type = 'success') {
-        const statusMessageContainer = document.getElementById('status-message-container');
-        const statusMessage = document.getElementById('status-message');
-        
-        statusMessage.textContent = message;
-        statusMessageContainer.style.display = 'block';
-
-        // Hide after 3 seconds
-        setTimeout(() => {
-            statusMessageContainer.style.display = 'none';
-        }, 3000);
-    }
-
-    
-  
-    // =================================================================
-    // Mock Data Fetching (Replaces API calls for demo)
-    // =================================================================
-
     async function fetchLecturerModules() {
-        // Filter modules to only show those taught by the current lecturer
-        return MOCK_MODULES.filter(m => m.lecturer === LECTURER_NAME);
+        try {
+            const response = await fetch('/api/lecturer/modules');
+            if (!response.ok) {
+                throw new Error('Failed to fetch modules.');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            showStatusMessage('Error: Could not load modules.', 'error');
+            return [];
+        }
     }
-
-    async function fetchStudentsByModule(moduleCode) {
-        // Returns the mock student list for the given module code
-        return MOCK_STUDENTS[moduleCode] || [];
-    }
-
-    // =================================================================
-    // Rendering Functions
-    // =================================================================
 
     /**
-     * Renders the list of modules into the module table.
-     * @param {Array<Object>} modules 
+     * Fetches students enrolled in a specific module.
+     * @param {string} moduleCode
      */
+    async function fetchStudentsByModule(moduleCode) {
+        try {
+            const response = await fetch(`/api/modules/${moduleCode}/students`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch student register.');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            showStatusMessage(`Error: Could not load students for ${moduleCode}.`, 'error');
+            return [];
+        }
+    }
+
+    // --- Rendering Functions ---
+
     function renderModuleTable(modules) {
         moduleTableBody.innerHTML = '';
-        if (modules.length === 0) {
-            moduleTableBody.innerHTML = '<tr><td colspan="2">No modules found.</td></tr>';
+        if (!modules || modules.length === 0) {
+            moduleTableBody.innerHTML = '<tr><td colspan="2">No modules found for your profile.</td></tr>';
             return;
         }
-
         modules.forEach(module => {
             const row = moduleTableBody.insertRow();
             row.dataset.moduleCode = module.code;
+            row.className = 'cursor-pointer hover:bg-gray-700';
             row.innerHTML = `
                 <td>${module.code}</td>
                 <td>${module.name}</td>
             `;
-            // Add click listener to view the register
             row.addEventListener('click', () => handleModuleSelection(module.code, module.name));
         });
     }
 
-    /**
-     * Renders the list of students into the student register table.
-     * @param {Array<Object>} students 
-     */
     function renderStudentTable(students) {
         studentTableBody.innerHTML = '';
-        if (students.length === 0) {
+        if (!students || students.length === 0) {
             studentTableBody.innerHTML = '<tr><td colspan="3">No students are currently enrolled in this module.</td></tr>';
             return;
         }
-
         students.forEach(student => {
             const row = studentTableBody.insertRow();
             row.innerHTML = `
                 <td>${student.student_number}</td>
-                <td>${student.name}</td>
-                <td>${student.surname}</td>
+                <td>${student.student_name}</td>
+                <td>${student.student_surname}</td>
             `;
         });
     }
 
-    // =================================================================
-    // View Management
-    // =================================================================
+    // --- View Management ---
 
-    /**
-     * Switches the UI between the Module List and the Student Register.
-     * @param {string} view - 'modules' or 'students'
-     * @param {string} moduleName - Name of the selected module
-     */
     function switchView(view, moduleName = '') {
         currentView = view;
         if (view === 'students') {
@@ -154,113 +99,76 @@ document.addEventListener('DOMContentLoaded', function() {
             studentRegisterSection.style.display = 'block';
             dataSearchInput.placeholder = 'Search for student number, name, or surname...';
             currentModuleTitle.textContent = `Register for: ${moduleName} (${currentModuleCode})`;
-            dataSearchInput.value = ''; // Clear search bar
+            dataSearchInput.value = '';
             renderStudentTable(studentsInModule);
-
-        } else { // 'modules'
+        } else {
             studentRegisterSection.style.display = 'none';
             moduleListSection.style.display = 'block';
             dataSearchInput.placeholder = 'Search for modules...';
-            currentModuleCode = null; // Clear state
-            dataSearchInput.value = ''; // Clear search bar
+            currentModuleCode = null;
+            dataSearchInput.value = '';
             renderModuleTable(allModules);
         }
     }
 
-    /**
-     * Handles the selection of a module from the list.
-     * @param {string} moduleCode 
-     * @param {string} moduleName 
-     */
     async function handleModuleSelection(moduleCode, moduleName) {
         currentModuleCode = moduleCode;
-        // Fetch and store students for the selected module
-        studentsInModule = await fetchStudentsByModule(moduleCode); 
-        
+        showStatusMessage(`Loading register for ${moduleCode}...`);
+        studentsInModule = await fetchStudentsByModule(moduleCode);
         switchView('students', moduleName);
     }
     
-    // =================================================================
-    // Event Handlers & Initialization
-    // =================================================================
+    // --- Event Handlers & Initialization ---
 
-    /**
-     * Handles filtering the list based on the current view (Modules or Students).
-     */
     function handleSearch() {
         const query = dataSearchInput.value.toLowerCase().trim();
-        
         if (currentView === 'modules') {
-            // Filter modules
             const filteredModules = allModules.filter(module =>
                 module.code.toLowerCase().includes(query) ||
                 module.name.toLowerCase().includes(query)
             );
             renderModuleTable(filteredModules);
-            
         } else if (currentView === 'students') {
-            // Filter students
             const filteredStudents = studentsInModule.filter(student =>
                 student.student_number.toLowerCase().includes(query) ||
-                student.name.toLowerCase().includes(query) ||
-                student.surname.toLowerCase().includes(query)
+                student.student_name.toLowerCase().includes(query) ||
+                student.student_surname.toLowerCase().includes(query)
             );
             renderStudentTable(filteredStudents);
         }
     }
+    
+    async function handleLogout() {
+      if (confirm("Are you sure you want to log out?")) {
+        await fetch('/api/logout', { method: 'POST' });
+        window.location.href = '/';
+      }
+    }
 
-
-    /**
-     * Initializes the page, loads modules, and sets up event listeners.
-     */
     async function initPage() {
-        // 1. Load Modules
+        showStatusMessage('Loading your modules...');
         allModules = await fetchLecturerModules();
         renderModuleTable(allModules);
 
-        // 2. Set up Event Listeners
         dataSearchInput.addEventListener('input', handleSearch);
-        
         backToModulesBtn.addEventListener('click', () => switchView('modules'));
+        if (backButton) backButton.addEventListener('click', () => window.history.back());
+        if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+        if (printButton) printButton.addEventListener('click', () => window.print());
         
-        if (backButton) {
-            // Standard back button function
-            backButton.addEventListener('click', function() {
-                window.history.back();
-            });
-        }
-        
-        // Profile and Logout buttons
         const profileBtn = document.querySelector('.profile-btn');
-        const logoutBtn = document.querySelector('.logout-btn');
+        if (profileBtn) profileBtn.addEventListener('click', () => window.location.href = 'lectureside_profile.html');
+    }
 
-        if (profileBtn) {
-            profileBtn.addEventListener('click', () => {
-                window.location.href = 'lectureside_profile.html';
-            });
-        }
-
-         if (logoutBtn) {
-    logoutBtn.addEventListener('click', function () {
-      const confirmLogout = confirm("Are you sure you want to log out?");
-      if (confirmLogout) {
-        // Clear session/local storage if used
-        sessionStorage.clear();
-        localStorage.clear();
-
-        // Redirect to login page
-        window.location.href = '/';
-      }
-      // else do nothing if user cancels
-    });
-  }
-
-        // Print functionality
-        if (printButton) {
-            printButton.addEventListener('click', () => {
-                window.print();
-            });
-        }
+    function showStatusMessage(message, type = 'success') {
+        const container = document.getElementById('status-message-container');
+        const statusMessage = document.getElementById('status-message');
+        if (!container || !statusMessage) return;
+        
+        statusMessage.textContent = message;
+        container.className = type === 'error' ? 'status-error' : 'status-success';
+        container.style.display = 'block';
+        setTimeout(() => container.style.display = 'none', 3000);
     }
 
     initPage();

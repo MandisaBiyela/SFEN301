@@ -9,24 +9,37 @@ document.addEventListener('DOMContentLoaded', function () {
   const passwordFormContainer = document.getElementById('password-form-container');
   const passwordMessage = document.getElementById('password-message');
 
-  // --- Mock Lecturer Data (To be replaced with dynamic data) ---
-  const MOCK_LECTURER_DATA = {
-    name: "Dr. Lihle Mkhize", 
-    email: "MkhizeL@dut.ac.za" 
-  };
-  // Mock current password for verification (Replace with actual secure check)
-  const MOCK_CURRENT_PASSWORD = 'password123'; 
-  
   const profileNameElement = document.getElementById('profile-name');
   const profileEmailElement = document.getElementById('profile-email');
 
   // Function to load and display profile data
-  function loadProfileData() {
-    if (profileNameElement) {
-      profileNameElement.textContent = MOCK_LECTURER_DATA.name;
+    /**
+   * Fetches lecturer data from the server and populates the profile.
+   */
+  async function loadProfileData() {
+    try {
+      const response = await fetch('/api/current_user');
+      if (!response.ok) throw new Error('Failed to fetch profile data.');
+      
+      const user = await response.json();
+      if (user.logged_in) {
+        if (profileNameElement) profileNameElement.textContent = `${user.name} ${user.surname}`;
+        if (profileEmailElement) profileEmailElement.textContent = user.email;
+      }
+    } catch (error) {
+      console.error(error);
+      if (profileNameElement) profileNameElement.textContent = 'Error Loading Name';
+      if (profileEmailElement) profileEmailElement.textContent = 'Could not load email.';
     }
-    if (profileEmailElement) {
-      profileEmailElement.textContent = MOCK_LECTURER_DATA.email;
+  }
+
+  /**
+   * Handles the logout process.
+   */
+  async function handleLogout() {
+    if (confirm("Are you sure you want to log out?")) {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/';
     }
   }
 
@@ -53,16 +66,10 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  // Logout button
-  if (logoutBtn) {
-      logoutBtn.addEventListener('click', function () {
-        if (confirm("Are you sure you want to log out?")) {
-          sessionStorage.clear();
-          localStorage.clear();
-          window.location.href = '/'; 
-        }
-      });
+ if (logoutBtn) {
+    logoutBtn.addEventListener('click', handleLogout);
   }
+
 
   // Show Password Form button
   if (changePasswordBtn) {
@@ -79,50 +86,38 @@ document.addEventListener('DOMContentLoaded', function () {
     passwordForm.addEventListener('submit', function (e) {
       e.preventDefault();
       
+      // NOTE: This entire form is a FRONTEND-ONLY DEMONSTRATION.
+      // A secure backend endpoint is required to actually change the password.
+      
       const oldPassword = document.getElementById('old-password').value;
       const newPassword = document.getElementById('new-password').value;
       const confirmPassword = document.getElementById('confirm-password').value;
 
-      passwordMessage.className = 'error-message'; // Reset class for styling
+      passwordMessage.className = 'error-message';
 
-      // 1. Check Old Password (MOCK CHECK)
-      if (oldPassword !== MOCK_CURRENT_PASSWORD) {
-        passwordMessage.textContent = 'Error: The old password you entered is incorrect.';
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        passwordMessage.textContent = 'Error: All password fields are required.';
         return;
       }
-
-      // 2. Check New Password vs Confirmation
       if (newPassword !== confirmPassword) {
-        passwordMessage.textContent = 'Error: New Password and Confirm New Password do not match.';
+        passwordMessage.textContent = 'Error: New passwords do not match.';
         return;
       }
-      
-      // 3. Check if new password is the same as old one
-      if (newPassword === oldPassword) {
-        passwordMessage.textContent = 'Error: New password cannot be the same as the old password.';
-        return;
-      }
-
-      // 4. Basic Complexity Check (Optional, but recommended)
       if (newPassword.length < 8) {
-        passwordMessage.textContent = 'Error: Password must be at least 8 characters long.';
+        passwordMessage.textContent = 'Error: New password must be at least 8 characters long.';
         return;
       }
 
       // --- MOCK PASSWORD CHANGE SUCCESS ---
-      // In a real application, you would send an AJAX request here to update the password on the server.
-      
-      passwordMessage.textContent = 'Success! Your password has been changed.';
-      passwordMessage.className = 'success-message'; // Assuming you add this style to your CSS
+      passwordMessage.textContent = 'DEMO SUCCESS: In a real app, your password would be changed.';
+      passwordMessage.className = 'success-message';
 
-      // After a short delay, hide the form and show profile details
       setTimeout(() => {
-        showProfileDetails();
-      }, 2000); 
-
-      // NOTE: You'd update MOCK_CURRENT_PASSWORD here if this were a single-page simulation
+        showProfileDetails(); // Function to switch back to the main view
+      }, 2500); 
     });
   }
+  
   
   // Initial load
   loadProfileData();
