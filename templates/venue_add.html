@@ -35,11 +35,11 @@
             <form id="add-venue-form" action="#" method="post">
                 <div class="form-group">
                     <label for="venue-name">Venue Name</label>
-                    <input type="text" id="venue-name" name="venue-name" placeholder="e.g., L301" required>
+                    <input type="text" id="venue-name" name="venue-name" placeholder="e.g., L301" title="Please use letters and numbers only." maxlength="50" pattern="^[A-Za-z0-9]+$" required>
                 </div>
                 <div class="form-group">
                     <label for="block">Block</label>
-                    <input type="text" id="block" name="block" placeholder="e.g., Block L" required>
+                    <input type="text" id="block" name="block" placeholder="e.g., Block L" title="Please use letters and spaces only." maxlength="50" pattern="^[A-Za-z ]+$" required>
                 </div>
                 <div class="form-group">
                  <label for="campus">Campus</label>

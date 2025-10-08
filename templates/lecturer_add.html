@@ -43,6 +43,9 @@
                         id="lecturer-name"
                         name="lecturer-name"
                         placeholder="e.g., Ndumiso"
+                        pattern="^[A-Za-z ]+$"
+                        title="Please use letters and spaces only."
+                        maxlength="100"
                         required
                     />
                 </div>
@@ -53,6 +56,9 @@
                         id="lecturer-surname"
                         name="lecturer-surname"
                         placeholder="e.g., Mthembu"
+                        pattern="^[A-Za-z ]+$"
+                        title="Please use letters and spaces only."
+                        maxlength="100"
                         required
                     />
                 </div>
@@ -64,7 +70,9 @@
                         name="lecturer-email"
                         placeholder="e.g., NdumisoMthembu@dut.ac.za"
                         required
-                        pattern="^[A-Za-z0-9._%+-]+@dut\.ac\.za$"
+                        pattern="^[A-Za-z0-9._%+\-]+@dut\.ac\.za$"
+                        maxlength="120"
+                        title="Please use a valid DUT email address ending in @dut.ac.za."
 
                     />
                 </div>

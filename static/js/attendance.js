@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let allModules = [];
     let allPeriods = [];
     let allAttendance = [];
-    let cancelledPeriods = new Set();
 
     const presentImg = 'static/images/Attended.png';
     const notPresentImg = 'static/images/NotAttend.png';
@@ -55,14 +54,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalCloseBtn = studentStatsModal.querySelector('.close-btn');
     const printAttendanceBtn = document.getElementById('print-attendance-btn');
 
-    // Helper to add minutes to HH:MM string
-    function addMinutes(time, minsToAdd) {
-        const [hours, minutes] = time.split(':').map(Number);
-        const date = new Date();
-        date.setHours(hours, minutes + minsToAdd, 0);
-        return date.toTimeString().substring(0, 5);
-    }
-
     // Populate modules dropdown
     function populateModules() {
         if (!moduleSelect) return;
@@ -97,10 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
             timeSlots.add(startTime);
         });
 
-        timeSlots.forEach(time => {
+        Array.from(timeSlots).sort().forEach(time => {
             const option = document.createElement('option');
             option.value = time;
-            option.textContent = `${time}`;
+            option.textContent = time;
             periodSelect.appendChild(option);
         });
     }
@@ -112,40 +103,55 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedPeriod = periodSelect.value;
         const searchQuery = studentSearchInput.value.toLowerCase();
 
+        // Clear table and stats if inputs are missing
         if (!selectedModule || !selectedDate || !selectedPeriod) {
             attendanceTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Please select module, date, and period.</td></tr>';
+            totalStudentsSpan.textContent = '0';
+            totalPresentSpan.textContent = '0';
+            periodRateSpan.textContent = '0%';
+            moduleRateSpan.textContent = '0%';
             return;
         }
 
-        // Get students registered for the selected module
-        const moduleStudents = allStudents.filter(student => 
+        // --- Period Attendance Calculation ---
+
+        const moduleStudents = allStudents.filter(student =>
             student.modules && student.modules.includes(selectedModule)
         );
         const totalStudentsCount = moduleStudents.length;
+        totalStudentsSpan.textContent = totalStudentsCount;
 
-        // Get attendance records for the selected period
-        const periodAttendance = allAttendance.filter(record => {
-            const recordDate = new Date(record.time).toISOString().split('T')[0];
-            const recordTime = new Date(record.time).toTimeString().substring(0, 5);
-            return recordDate === selectedDate && recordTime === selectedPeriod;
-        });
+        const [startTime, endTime] = selectedPeriod.split(' - ');
+        const selectedDayOfWeek = new Date(selectedDate).toLocaleString('en-US', { weekday: 'long' });
+
+        const relevantPeriodIds = allPeriods
+            .filter(p =>
+                p.module_codes.includes(selectedModule) &&
+                p.period_start_time === startTime &&
+                p.period_end_time === endTime &&
+                p.day_of_week === selectedDayOfWeek
+            )
+            .map(p => p.id);
+
+        const periodAttendance = allAttendance.filter(record =>
+            record.date === selectedDate && relevantPeriodIds.includes(record.class_period_id)
+        );
 
         const presentStudentsInPeriod = new Set(periodAttendance.map(r => r.user_id)).size;
         const periodRate = totalStudentsCount > 0 ? ((presentStudentsInPeriod / totalStudentsCount) * 100).toFixed(2) : 0;
 
-        totalStudentsSpan.textContent = totalStudentsCount;
         totalPresentSpan.textContent = presentStudentsInPeriod;
         periodRateSpan.textContent = `${periodRate}%`;
 
+        // --- Render Table ---
         attendanceTableBody.innerHTML = '';
-
         const filteredStudents = moduleStudents.filter(student => {
             const fullName = (student.name + ' ' + student.surname).toLowerCase();
             return fullName.includes(searchQuery) || student.student_number.toLowerCase().includes(searchQuery);
         });
 
         if (filteredStudents.length > 0) {
-            filteredStudents.forEach(student => {
+            filteredStudents.sort((a,b) => a.surname.localeCompare(b.surname)).forEach(student => {
                 const isPresent = periodAttendance.some(r => r.user_id === student.student_number);
                 const statusImageSrc = isPresent ? presentImg : notPresentImg;
                 const statusAlt = isPresent ? 'Present' : 'Absent';
@@ -163,20 +169,22 @@ document.addEventListener('DOMContentLoaded', function() {
             attendanceTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No students found or registered for this module.</td></tr>`;
         }
 
-        // Module Attendance Rate calculation
-        const moduleAttendanceRecords = allAttendance.filter(record => {
-            // This would need to be enhanced based on how you want to calculate module attendance
-            return record.student_name && record.student_name.toLowerCase().includes(selectedModule.toLowerCase());
-        });
+        // --- Module Attendance Rate Calculation ---
+        const modulePeriodIds = allPeriods
+            .filter(p => p.module_codes.includes(selectedModule))
+            .map(p => p.id);
+        
+        const moduleAttendanceRecords = allAttendance.filter(r => modulePeriodIds.includes(r.class_period_id));
+        
+        const uniqueModuleSessions = new Set(moduleAttendanceRecords.map(r => `${r.class_period_id}-${r.date}`));
+        const totalModuleSessionsCount = uniqueModuleSessions.size;
 
-        const uniqueSessions = new Set(moduleAttendanceRecords.map(r => r.time.substring(0, 10))).size;
-        const totalPossibleAttendance = totalStudentsCount * uniqueSessions;
-        const totalActualAttendance = new Set(moduleAttendanceRecords.map(r => `${r.user_id}-${r.time.substring(0, 10)}`)).size;
+        const totalActualAttendance = moduleAttendanceRecords.length;
+        const totalPossibleAttendance = totalStudentsCount * totalModuleSessionsCount;
+
         const moduleRate = totalPossibleAttendance > 0 ? ((totalActualAttendance / totalPossibleAttendance) * 100).toFixed(2) : 0;
-
         moduleRateSpan.textContent = `${moduleRate}%`;
 
-        // Add click handlers for "View Stats" buttons
         document.querySelectorAll('.student-stats-btn').forEach(btn => {
             btn.addEventListener('click', showStudentStats);
         });
@@ -195,39 +203,34 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Get attendance records for this student and module
-        const studentAttendanceRecords = allAttendance.filter(record => 
-            record.user_id === studentId
-        );
+        const modulePeriodIds = allPeriods
+            .filter(p => p.module_codes.includes(moduleId))
+            .map(p => p.id);
 
-        const totalAttendedPeriods = new Set(studentAttendanceRecords.map(r => r.time.substring(0, 10))).size;
+        const allModuleAttendance = allAttendance.filter(r => modulePeriodIds.includes(r.class_period_id));
+        const studentModuleAttendance = allModuleAttendance.filter(r => r.user_id === studentId);
+        
+        const totalAttendedPeriods = studentModuleAttendance.length;
 
-        // Calculate total possible periods (this would need to be enhanced based on your period structure)
-        const totalPossiblePeriods = allPeriods.filter(period => 
-            period.module_codes && period.module_codes.includes(moduleId)
-        ).length;
+        const uniqueModuleSessions = new Set(allModuleAttendance.map(r => `${r.class_period_id}-${r.date}`));
+        const totalPossiblePeriods = uniqueModuleSessions.size;
 
         const attendanceRate = totalPossiblePeriods > 0 ? ((totalAttendedPeriods / totalPossiblePeriods) * 100).toFixed(2) : 0;
 
         document.getElementById('modal-student-name').textContent = `${student.name} ${student.surname}`;
         document.getElementById('modal-module-name').textContent = `Module: ${module.name}`;
         document.getElementById('modal-stats-text').innerHTML = `
-            <p>Total Module Attendance Rate: <strong>${attendanceRate}%</strong></p>
-            <p>Total Periods Attended: <strong>${totalAttendedPeriods}</strong></p>
+            <p>Overall Module Attendance Rate: <strong>${attendanceRate}%</strong></p>
+            <p>Periods Attended: <strong>${totalAttendedPeriods}</strong> of <strong>${totalPossiblePeriods}</strong> recorded sessions.</p>
         `;
 
         studentStatsModal.style.display = 'block';
     }
 
     // Close modal handlers
-    modalCloseBtn.addEventListener('click', () => {
-        studentStatsModal.style.display = 'none';
-    });
-
+    modalCloseBtn.addEventListener('click', () => studentStatsModal.style.display = 'none');
     window.addEventListener('click', event => {
-        if (event.target === studentStatsModal) {
-            studentStatsModal.style.display = 'none';
-        }
+        if (event.target === studentStatsModal) studentStatsModal.style.display = 'none';
     });
 
     // Print attendance report
@@ -241,23 +244,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const moduleRate = moduleRateSpan.textContent;
         const tableContent = attendanceTableBody.innerHTML;
 
-        const isCancelled = tableContent.includes('This period was cancelled');
+        if (!selectedModuleText || !selectedDate || !selectedPeriodText) {
+            alert("Please select a module, date, and period before printing.");
+            return;
+        }
 
         let reportContent = `
             <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px;">
                 <h1 style="text-align: center;">Attendance Report</h1>
                 <h2 style="text-align: center;">${selectedModuleText}</h2>
                 <p><strong>Date:</strong> ${selectedDate} | <strong>Period:</strong> ${selectedPeriodText}</p>
-        `;
-
-        if (isCancelled) {
-            reportContent += `
-                <div style="text-align: center; font-size: 1.2em; font-weight: bold; margin-top: 30px;">
-                    This period was cancelled.
-                </div>
-            `;
-        } else {
-            reportContent += `
                 <div style="display: flex; justify-content: space-around; margin-top: 20px; border: 1px solid #ddd; padding: 10px;">
                     <div style="text-align: center;">
                         <p style="margin: 0;">Total Students</p>
@@ -272,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p style="font-size: 1.5em; font-weight: bold;">${periodRate}</p>
                     </div>
                     <div style="text-align: center;">
-                        <p style="margin: 0;">Module Attendance Rate</p>
+                        <p style="margin: 0;">Overall Module Rate</p>
                         <p style="font-size: 1.5em; font-weight: bold;">${moduleRate}</p>
                     </div>
                 </div>
@@ -286,15 +282,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     </thead>
                     <tbody>
                         ${attendanceTableBody.innerHTML
-                            .replace(/<button.*?<\/button>/g, '')
+                            .replace(/<td\b[^>]*>.*?<\/button>\s*<\/td>/g, '') // Remove the actions column
                             .replace(new RegExp(`<img src="${presentImg.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}".*?>`, 'g'), 'Yes')
                             .replace(new RegExp(`<img src="${notPresentImg.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}".*?>`, 'g'), 'No')}
                     </tbody>
                 </table>
-            `;
-        }
-
-        reportContent += `</div>`;
+            </div>`;
 
         const printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Print Attendance Report</title></head><body>');
@@ -304,66 +297,33 @@ document.addEventListener('DOMContentLoaded', function() {
         printWindow.print();
     }
 
-    // Event listeners for filtering
-    if (moduleSelect) {
-        moduleSelect.addEventListener('change', () => {
-            populatePeriods(); // Update periods when module changes
-            renderAttendance();
-        });
-    }
-    if (specificDateInput) {
-        specificDateInput.addEventListener('change', renderAttendance);
-    }
-    if (periodSelect) {
-        periodSelect.addEventListener('change', renderAttendance);
-    }
-    if (studentSearchInput) {
-        studentSearchInput.addEventListener('input', renderAttendance);
-    }
-    if (printAttendanceBtn) {
-        printAttendanceBtn.addEventListener('click', printAttendanceReport);
-    }
+    // Event listeners
+    if (moduleSelect) moduleSelect.addEventListener('change', () => {
+        populatePeriods();
+        renderAttendance();
+    });
+    if (specificDateInput) specificDateInput.addEventListener('change', renderAttendance);
+    if (periodSelect) periodSelect.addEventListener('change', renderAttendance);
+    if (studentSearchInput) studentSearchInput.addEventListener('input', renderAttendance);
+    if (printAttendanceBtn) printAttendanceBtn.addEventListener('click', printAttendanceReport);
+    if (backButton) backButton.addEventListener('click', e => {
+        e.preventDefault();
+        window.history.back();
+    });
+    if (profileBtn) profileBtn.addEventListener('click', () => window.location.href = 'profile.html');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to logout?')) {
+            sessionStorage.clear();
+            localStorage.clear();
+            window.location.href = '/';
+        }
+    });
 
-    // Back button navigates back in history
-    if (backButton) {
-        backButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.history.back();
-        });
-    }
-
-    // Profile button navigation
-    if (profileBtn) {
-        profileBtn.addEventListener('click', () => {
-            window.location.href = 'profile.html';
-        });
-    }
-
-    // Logout button with confirm and redirect + clear storage
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to logout?')) {
-                sessionStorage.clear();
-                localStorage.clear();
-                window.location.href = '/';
-            }
-        });
-    }
-
-    // Initialize data and render
+    // Initialize
     fetchAllData().then(() => {
-        // Set default values after data is loaded
-        if (allModules.length > 0) {
-            moduleSelect.value = allModules[0].code;
-            populatePeriods();
-        }
-        
-        // Set today's date as default
-        const today = new Date().toISOString().split('T')[0];
         if (specificDateInput) {
-            specificDateInput.value = today;
+            specificDateInput.value = new Date().toISOString().split('T')[0];
         }
-        
         renderAttendance();
     });
 });

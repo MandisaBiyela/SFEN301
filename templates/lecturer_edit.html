@@ -40,15 +40,15 @@
                 </div>
                 <div class="form-group">
                     <label for="lecturer-name">Name</label>
-                    <input type="text" id="lecturer-name" name="lecturer-name" required />
+                    <input type="text" id="lecturer-name" name="lecturer-name" pattern="^[A-Za-z ]+$" title="Please use letters and spaces only." maxlength="100" required />
                 </div>
                 <div class="form-group">
                     <label for="lecturer-surname">Surname</label>
-                    <input type="text" id="lecturer-surname" name="lecturer-surname" required />
+                    <input type="text" id="lecturer-surname" name="lecturer-surname" pattern="^[A-Za-z ]+$" title="Please use letters and spaces only." maxlength="100" required />
                 </div>
                 <div class="form-group">
                     <label for="lecturer-email">Email</label>
-                    <input type="email" id="lecturer-email" name="lecturer-email" required pattern="^[A-Za-z0-9._%+-]+@dut\.ac\.za$" />
+                    <input type="email" id="lecturer-email" name="lecturer-email" required pattern="^[A-Za-z0-9._%+\-]+@dut\.ac\.za$" title="Please use a valid DUT email address ending in @dut.ac.za." maxlength="120" />
                 </div>
                 <button type="submit" class="submit-btn">Save Changes</button>
             </form>

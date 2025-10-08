@@ -33,6 +33,18 @@ async function fetchLecturers() {
     }
 }
 
+async function fetchLecturerById(lecturerId) {
+    try {
+        const response = await fetch(`/api/lecturers/${lecturerId}`);
+        if (!response.ok) throw new Error('Failed to fetch lecturer');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching lecturer:', error);
+        showStatusMessage('Could not load lecturer.', 'error');
+        return null;
+    }
+}
+
 async function deleteModule(moduleId) {
     try {
         const response = await fetch(`/api/modules/${moduleId}`, {
@@ -100,12 +112,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            filteredModules.forEach(module => {
+            filteredModules.forEach(async module => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${module.code}</td>
                     <td>${module.name}</td>
-                    <td>${module.lecturer}</td>
+                    <td>${(await fetchLecturerById(module.lecturer))?.email}</td>
                     <td>
                         <a href="module_edit.html?id=${module.code}" class="image-btn edit-btn" title="Edit">
                             <img src="/static/images/Edit.png" alt="Edit" class="action-icon">
@@ -153,8 +165,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Populate lecturer dropdown
         const lecturers = await fetchLecturers();
         lecturers.sort((a, b) => a.name.localeCompare(b.name));
-        lecturers.forEach(lecturer => {
-            const option = new Option(`${lecturer.name}`, lecturer.lecturer_number);
+        lecturers.forEach(async lecturer => {
+            const option = new Option(`${(await fetchLecturerById(lecturer.lecturer_number))?.email}`, lecturer.lecturer_number);
             lecturerSelect.add(option);
         });
 
@@ -207,8 +219,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Populate lecturer dropdown
             const lecturerSelect = document.getElementById('lecturer');
             lecturers.sort((a, b) => a.name.localeCompare(b.name));
-            lecturers.forEach(lecturer => {
-                const option = new Option(`${lecturer.name}`, lecturer.lecturer_number);
+            lecturers.forEach(async lecturer => {
+                const option = new Option(`${(await fetchLecturerById(lecturer.lecturer_number))?.email}`, lecturer.lecturer_number);
                 lecturerSelect.add(option);
             });
             // Set the correct lecturer as selected

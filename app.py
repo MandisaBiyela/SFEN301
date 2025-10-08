@@ -44,7 +44,7 @@ def compute_embedding(image_bytes):
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if img is None:
-            raise ValueError("Cou2222ld not decode image bytes.")
+            raise ValueError("Could not decode image bytes.")
         
         # Use DeepFace to generate the embedding
         embedding_objs = DeepFace.represent(
@@ -62,8 +62,6 @@ def compute_embedding(image_bytes):
 
     except Exception as e:
         print(f"Error in compute_embedding: {e}")
-        # This will often fail if DeepFace can't find a face in the image.
-        # The `enforce_detection=True` is important for this.
         return None
 
 
@@ -323,6 +321,19 @@ def delete_lecturer(lecturer_number):
         print(f"Error fetching lecturers: {e}")
         return jsonify({'error': 'Error deleting lecturer data'}), 500
 
+@app.route('/api/lecturers/<lecturer_number>')
+def get_lecturer_by_id(lecturer_number):
+    lecturer = Lecturer.query.filter_by(lecturer_number=lecturer_number).first()
+    if lecturer:
+        return jsonify({
+            'lecturer_number': lecturer.lecturer_number,
+            'name': lecturer.name,
+            'surname': lecturer.surname,
+            'email': lecturer.email,
+            'modules': [m.module_code for m in Module.query.filter_by(lecturer_number=lecturer.lecturer_number).limit(5)]
+        })
+    return jsonify({'error': 'Lecturer not found'}), 404
+    
 # --- MODULE API ENDPOINTS ---
 
 @app.route('/api/modules')
@@ -332,6 +343,7 @@ def get_modules():
     """
     try:
         modules = Module.query.order_by(Module.module_name).all()
+        
         return jsonify([{
             'lecturer': m.lecturer_number,
             'name': m.module_name,
@@ -544,7 +556,7 @@ def get_periods():
     API endpoint to get all class periods as JSON
     """
     try:
-        periods = Class_Period.query.order_by(Class_Period.period_start_time).all()
+        periods = Class_Period.query.order_by(Class_Period.day_of_week, Class_Period.period_start_time).all()
         period_list = []
         for p in periods:
             # Get register and venue information
@@ -585,10 +597,18 @@ def add_period():
         # Validate required fields
         if not all([period_id, class_register, period_venue_id]):
             return jsonify({'error': 'Period ID, class register, and venue are required'}), 400
+        
+        # Check if period times are in order
+        format = "%H:%M"
+        s_time = datetime.strptime(period_start_time, format).time()
+        e_time = datetime.strptime(period_end_time, format).time()
+
+        if s_time >= e_time:
+            return jsonify({'error': f'Start time: {period_start_time} should be strictly before the end time: {period_end_time}'}), 400
 
         # Check if period ID already exists
         if Class_Period.query.filter_by(period_id=period_id).first():
-            return jsonify({'error': f'Period with ID {period_id} already exists'}), 409
+            return jsonify({'message': 'No changes made'}), 201
 
         # Verify venue exists
         if not Venue.query.filter_by(id=period_venue_id).first():

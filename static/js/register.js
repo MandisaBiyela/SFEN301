@@ -204,10 +204,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${student.student_surname || 'N/A'}</td>
                 `;
                 
-                // Add alternating row colors for better readability
-                if (index % 2 === 1) {
-                    row.style.backgroundColor = '#f8f9fa';
-                }
                 
                 studentRegisterBody.appendChild(row);
             });

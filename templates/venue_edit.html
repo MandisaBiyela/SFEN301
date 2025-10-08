@@ -36,15 +36,22 @@
                 <input type="hidden" id="venue-id" name="venue-id">
                 <div class="form-group">
                     <label for="venue-name">Venue Name</label>
-                    <input type="text" id="venue-name" name="venue-name" required>
+                    <input type="text" id="venue-name" name="venue-name" title="Please use letters and numbers only." maxlength="50" pattern="^[A-Za-z0-9]+$" required>
                 </div>
                 <div class="form-group">
                     <label for="block">Block</label>
-                    <input type="text" id="block" name="block" required>
+                    <input type="text" id="block" name="block" title="Please use letters and spaces only." maxlength="50" pattern="^[A-Za-z ]+$" required>
                 </div>
                 <div class="form-group">
-                    <label for="campus">Campus</label>
-                    <input type="text" id="campus" name="campus" required>
+                 <label for="campus">Campus</label>
+                 <select id="campus" name="campus" required>
+                 <option value="">-- Select Campus --</option>
+                 <option value="Steve Biko Campus">Steve Biko Campus</option>
+                 <option value="ML Sultan Campus">ML Sultan Campus</option>
+                 <option value="Ritson Campus">Ritson Campus</option>
+                 <option value="Indumiso Campus">Indumiso Campus</option>
+                  <option value="Midlands Campus">Midlands Campus</option>
+                 </select>
                 </div>
                 <button type="submit" class="submit-btn">Save Changes</button>
             </form>

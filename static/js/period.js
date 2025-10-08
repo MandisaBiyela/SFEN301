@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
             existingPeriods = periods.filter(period => 
                 period.module_codes && period.module_codes.includes(currentModuleCode)
             );
-
+            console.log('Existing periods:', existingPeriods);
             // Load existing periods into form
             loadExistingPeriods();
 
@@ -267,9 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add period entries for existing periods
         existingPeriods.forEach((period, index) => {
             const periodStartDate = new Date(period.period_start_time);
-            const day = daysOfTheWeek[periodStartDate.getDay()];
-            const startTime = periodStartDate.toTimeString().substring(0, 5);
-            const endTime = new Date(period.period_end_time).toTimeString().substring(0, 5);
+            const day = period.day_of_week;
 
             addPeriodEntry(index + 1, day, period.period_start_time, period.period_end_time, period.venue_id);
         });
@@ -298,7 +296,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="form-group">
                 <label for="day-${count}">Day</label>
-                <select id="day-${count}" name="day-${count}" class="period-day-select"></select>
+                <select id="day-${count}" name="day-${count}" class="period-day-select">
+                ${daysOfTheWeek.map(d => `<option value="${d}" ${d === day ? 'selected' : ''}>${d}</option>`).join('')}
+                </select>
             </div>
             <div class="form-group">
                 <label for="time-start-${count}">Start Time</label>
@@ -310,7 +310,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="form-group">
                 <label for="venue-${count}">Venue</label>
-                <select id="venue-${count}" name="venue-${count}" class="period-venue-select"></select>
+                <select id="venue-${count}" name="venue-${count}" class="period-venue-select">
+                ${availableVenues.map(venue => `<option value="${venue.id}" ${venue.id == venueId ? 'selected' : ''}>${venue.name} (${venue.block}, ${venue.campus})</option>`).join('')}
+                </select>
             </div>
         `;
         return periodDiv;
@@ -461,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         targetEndDate.setDate(targetStartDate.getDate());
                         targetEndDate.setHours(endHours, endMinutes, 0, 0);
 
-                        const periodId = `${currentModuleCode}-${day}-${targetStartDate.getHours()}${targetStartDate.getMinutes()}`;
+                        const periodId = `${currentModuleCode}-${day}-${targetStartDate.getHours()}${targetStartDate.getMinutes()}-${targetEndDate.getHours()}${targetEndDate.getMinutes()}`;
                         
                         periods.push({
                             period_id: periodId,
