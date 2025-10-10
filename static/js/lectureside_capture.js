@@ -1,7 +1,9 @@
 // --- Configuration ---
-let recognitionInterval = null; // To hold the setInterval ID
-let isProcessing = false; // Flag to prevent multiple simultaneous API calls
-const CAPTURE_INTERVAL_MS = 3000; // Capture and send a frame every 3 seconds
+let recognitionInterval = null;
+let isProcessing = false;
+const CAPTURE_INTERVAL_MS = 3000;
+let cameraInitialized = false;
+let cameraInitializing = false;
 
 // --- DOM Elements ---
 const videoFeed = document.getElementById('video-feed');
@@ -16,15 +18,10 @@ const modalText = document.getElementById('modal-text');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalNoBtn = document.getElementById('modal-no-btn');
 
-// Create a canvas element in memory to capture frames
 const canvas = document.createElement('canvas');
 
 // --- Utility Functions ---
 
-/**
- * Displays a custom modal box.
- * @param {string} message - The message to display.
- */
 function showModal(message) {
     modalText.textContent = message;
     modalBox.classList.remove('hidden');
@@ -37,36 +34,25 @@ function showModal(message) {
     }
 }
 
-/** Hides the custom modal box. */
 function hideModal() {
     modalBox.classList.add('hidden');
 }
 
-/**
- * Updates the status overlay message.
- * @param {string} message - The message to display.
- * @param {string} type - 'initial', 'present', 'unidentifiable', 'already-present', 'error'.
- */
 function updateStatus(message, type) {
     statusMessage.textContent = message;
     statusMessage.className = 'message-text ' + type + '-message';
 }
 
-/**
- * Adds an entry to the attendance log.
- * @param {string} entry - The log text.
- * @param {string} type - 'success', 'warning', 'error'.
- */
 function logAttendance(entry, type) {
     const li = document.createElement('li');
     li.textContent = entry;
 
     const colorMap = {
-        success: '#3ca087', // Green
-        warning: '#f39c12', // Yellow/Orange
-        error: '#e74c3c'    // Red
+        success: '#3ca087',
+        warning: '#f39c12',
+        error: '#e74c3c'
     };
-    li.style.color = colorMap[type] || '#f4f4f4'; // Default to white
+    li.style.color = colorMap[type] || '#f4f4f4';
 
     if (attendanceLog.firstChild) {
         attendanceLog.insertBefore(li, attendanceLog.firstChild);
@@ -81,37 +67,38 @@ function logAttendance(entry, type) {
 
 // --- Core Attendance Logic ---
 
-/**
- * Captures a frame from the video, sends it to the backend, and handles the response.
- */
 async function processFrameForAttendance() {
-    if (isProcessing) {
-        return; // Don't send a new request if one is already in flight
+    if (isProcessing || !cameraInitialized) {
+        return;
     }
     isProcessing = true;
 
-    // 1. Capture frame from video to canvas
-    canvas.width = videoFeed.videoWidth;
-    canvas.height = videoFeed.videoHeight;
-    const context = canvas.getContext('2d');
-    context.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
-
-    // 2. Get image data as Base64 string
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-
     try {
-        // 3. Send image data to the backend API
+        // Check if video is playing
+        if (videoFeed.paused || videoFeed.ended) {
+            isProcessing = false;
+            return;
+        }
+
+        // Capture frame
+        canvas.width = videoFeed.videoWidth;
+        canvas.height = videoFeed.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
+
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
+
         const response = await fetch('/api/mark_attendance', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ image_data: imageDataUrl }),
-        })
+        });
 
         const result = await response.json();
-        console.log('Server response:', result); // Log the result here
-        // 4. Process the response from the backend
+        console.log('Server response:', result);
+
         switch (result.status) {
             case 'present':
                 updateStatus(`Welcome, ${result.student_name}! Marked present.`, 'present');
@@ -127,119 +114,210 @@ async function processFrameForAttendance() {
             case 'no_active_period':
                 updateStatus(result.message, 'error');
                 logAttendance(`❌ System paused: ${result.message}`, 'error');
-                // Stop the loop if there's no active class
-                if (recognitionInterval) clearInterval(recognitionInterval); 
+                if (recognitionInterval) clearInterval(recognitionInterval);
                 break;
             default:
-                 updateStatus('An unknown response was received.', 'error');
-                 break;
+                updateStatus('An unknown response was received.', 'error');
+                break;
         }
 
     } catch (error) {
         console.error('Error sending frame for recognition:', error);
         updateStatus('Connection error. Could not reach server.', 'error');
         logAttendance('❌ Network or Server Error.', 'error');
-        // Stop the loop on connection error to prevent spamming
-        if (recognitionInterval) clearInterval(recognitionInterval); 
+        if (recognitionInterval) clearInterval(recognitionInterval);
     } finally {
-        // 5. Reset status and allow the next API call
         setTimeout(() => {
-            if (videoFeed.srcObject) { // Only reset if camera is still active
+            if (videoFeed.srcObject && cameraInitialized) {
                 updateStatus('Awaiting Facial Presence...', 'initial');
             }
             isProcessing = false;
-        }, 2000); // Display result for 2 seconds before resetting
+        }, 2000);
     }
 }
 
-// --- Initialization and Event Listeners ---
-/**
- * Stops the camera and the recognition interval.
- */
+// --- Camera Initialization ---
+
 function stopCameraAndLoop() {
     if (recognitionInterval) {
         clearInterval(recognitionInterval);
         recognitionInterval = null;
     }
-    if (videoFeed.srcObject) {
-        videoFeed.srcObject.getTracks().forEach(track => track.stop());
-        videoFeed.srcObject = null;
+
+    if (videoFeed && videoFeed.srcObject) {
+        try {
+            videoFeed.srcObject.getTracks().forEach(track => {
+                track.stop();
+            });
+            videoFeed.srcObject = null;
+        } catch (e) {
+            console.error('Error stopping camera:', e);
+        }
     }
+
+    cameraInitialized = false;
+    cameraInitializing = false;
 }
 
-/**
- * Initializes the camera stream and starts the recognition loop.
- */
 async function initializeCamera() {
+    // Prevent multiple simultaneous initialization attempts
+    if (cameraInitializing || cameraInitialized) {
+        return;
+    }
+
+    cameraInitializing = true;
     updateStatus('Requesting camera access...', 'initial');
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Use a more robust approach to get user media
+        const constraints = {
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            },
+            audio: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        // Verify stream has video tracks
+        if (!stream.getVideoTracks().length) {
+            throw new Error('No video tracks in stream');
+        }
+
+        // Set up the video element
         videoFeed.srcObject = stream;
         
+        // Wait for metadata to load before playing
         videoFeed.onloadedmetadata = () => {
-            videoFeed.play();
-            updateStatus('Awaiting Facial Presence...', 'initial');
-            logAttendance('System initialized. Starting face scan...', 'success');
+            videoFeed.play().then(() => {
+                cameraInitialized = true;
+                cameraInitializing = false;
+                updateStatus('Awaiting Facial Presence...', 'initial');
+                logAttendance('✅ System initialized. Starting face scan...', 'success');
 
-            // Start the recognition loop
-            if (!recognitionInterval) {
-                recognitionInterval = setInterval(processFrameForAttendance, CAPTURE_INTERVAL_MS);
-            }
+                // Start recognition loop only after video is confirmed to be playing
+                if (!recognitionInterval && cameraInitialized) {
+                    recognitionInterval = setInterval(processFrameForAttendance, CAPTURE_INTERVAL_MS);
+                }
+            }).catch(err => {
+                console.error('Error playing video:', err);
+                cameraInitialized = false;
+                cameraInitializing = false;
+                updateStatus('ERROR: Failed to start video. Please refresh the page.', 'error');
+                logAttendance('❌ Failed to start video playback.', 'error');
+            });
         };
+
+        // Handle stream errors
+        videoFeed.onerror = (err) => {
+            console.error('Video element error:', err);
+            cameraInitialized = false;
+            cameraInitializing = false;
+            updateStatus('ERROR: Video playback error. Please refresh.', 'error');
+        };
+
     } catch (err) {
-        console.error('Error accessing the camera: ', err);
-        updateStatus('CAMERA ERROR: Please allow camera access and refresh.', 'error');
-        logAttendance('❌ Failed to access camera. Check browser permissions.', 'error');
+        cameraInitialized = false;
+        cameraInitializing = false;
+        
+        console.error('Error accessing camera:', err);
+
+        // Provide specific error messages
+        if (err.name === 'NotAllowedError') {
+            updateStatus('CAMERA PERMISSION DENIED: Please allow camera access in your browser settings.', 'error');
+            logAttendance('❌ Camera permission denied. Check browser settings.', 'error');
+        } else if (err.name === 'NotFoundError') {
+            updateStatus('CAMERA NOT FOUND: No camera detected on your device.', 'error');
+            logAttendance('❌ No camera device found.', 'error');
+        } else if (err.name === 'NotReadableError') {
+            updateStatus('CAMERA ERROR: Camera is in use by another application.', 'error');
+            logAttendance('❌ Camera is unavailable (may be in use).', 'error');
+        } else {
+            updateStatus('CAMERA ERROR: ' + err.message, 'error');
+            logAttendance('❌ Camera initialization failed: ' + err.message, 'error');
+        }
+
+        // Retry after a delay
+        setTimeout(() => {
+            if (!cameraInitialized && !cameraInitializing) {
+                console.log('Retrying camera initialization...');
+                initializeCamera();
+            }
+        }, 3000);
     }
 }
 
-// Start initialization on page load
-window.onload = initializeCamera;
+// --- Event Listeners ---
 
-// Stop camera when the user navigates away from the page
-window.onbeforeunload = stopCameraAndLoop;
-
-// Event listeners for header/navigation buttons
-backButton.addEventListener('click', () => {
-    stopCameraAndLoop();
-    window.history.back();
+window.addEventListener('load', () => {
+    // Give the page a moment to fully load before requesting permissions
+    setTimeout(initializeCamera, 500);
 });
 
-profileBtn.addEventListener('click', () => {
-    stopCameraAndLoop();
-    window.location.href = 'lectureside_profile.html';
+window.addEventListener('beforeunload', stopCameraAndLoop);
+
+window.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // Pause recording when tab is hidden
+        if (recognitionInterval) {
+            clearInterval(recognitionInterval);
+            recognitionInterval = null;
+        }
+    } else {
+        // Resume when tab becomes visible
+        if (cameraInitialized && !recognitionInterval) {
+            recognitionInterval = setInterval(processFrameForAttendance, CAPTURE_INTERVAL_MS);
+        }
+    }
 });
+
+// Navigation buttons
+if (backButton) {
+    backButton.addEventListener('click', () => {
+        stopCameraAndLoop();
+        window.history.back();
+    });
+}
+
+if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+        stopCameraAndLoop();
+        window.location.href = 'lectureside_profile.html';
+    });
+}
 
 if (dutLogoLink) {
     dutLogoLink.addEventListener('click', (e) => {
-        e.preventDefault(); // Prevent default link behavior before stopping camera
+        e.preventDefault();
         stopCameraAndLoop();
         window.location.href = 'lectureside_dashboard.html';
     });
 }
 
-logoutBtn.addEventListener('click', () => {
-    showModal('Are you sure you want to log out?');
-});
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        showModal('Are you sure you want to log out?');
+    });
+}
 
-modalCloseBtn.addEventListener('click', async () => {
-      // This button serves as the "Confirm" action for the modal.
-    if (modalText.textContent.includes('Are you sure you want to log out?')) {
-        stopCameraAndLoop();
-        try {
-            // Call the backend to properly end the session
-            await fetch('/api/logout', { method: 'POST' });
-        } catch (error) {
-            console.error('API logout call failed, redirecting anyway.', error);
-        } finally {
-            // Redirect to login page regardless of API call success
-            window.location.href = '/'; 
+if (modalCloseBtn) {
+    modalCloseBtn.addEventListener('click', async () => {
+        if (modalText.textContent.includes('Are you sure you want to log out?')) {
+            stopCameraAndLoop();
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (error) {
+                console.error('API logout call failed, redirecting anyway.', error);
+            } finally {
+                window.location.href = '/';
+            }
+        } else {
+            hideModal();
         }
-    } else {
-        hideModal();
-    }
-});
+    });
+}
 
 if (modalNoBtn) {
     modalNoBtn.addEventListener('click', () => {

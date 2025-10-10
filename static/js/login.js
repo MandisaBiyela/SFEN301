@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const usernameLabel = document.getElementById('username-label');
     const usernameInput = document.getElementById('username');
-    const forgotPasswordContainer = document.querySelector('.forgot-password-container');
+    /*const forgotPasswordContainer = document.querySelector('.forgot-password-container');*/
     const errorMessageDiv = document.getElementById('login-error'); // For displaying errors
 
     let userType = 'lecturer'; // Default to lecturer
@@ -19,16 +19,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (type === 'admin') {
             usernameLabel.textContent = 'Admin ID';
             usernameInput.placeholder = 'Enter Admin ID Number';
-            forgotPasswordContainer.style.display = 'none';
+            
         } else if (type === 'lecturer') {
             usernameLabel.textContent = 'Lecturer ID';
             usernameInput.placeholder = 'Enter Lecturer ID Number';
-            forgotPasswordContainer.style.display = 'block';
+          
         }
     }
 
     // Set initial state for Lecturer
-    if (adminTab && lecturerTab && usernameLabel && usernameInput && forgotPasswordContainer) {
+    if (adminTab && lecturerTab && usernameLabel && usernameInput /*&& forgotPasswordContainer*/) {
         setActiveTab(lecturerTab, adminTab);
         updateFormFields(userType);
 

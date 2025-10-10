@@ -153,51 +153,167 @@ async function initStudentListPage() {
 
 // --- Add/Edit Page Common Logic ---
 let videoStream;
-let faceIdImageUrl = null; // Stores Base64 image data URL
+let faceIdImageUrl = null;
+let cameraActive = false;
 
 async function startCamera(webcamEl, overlayEl, buttonsEl) {
+    // Prevent multiple simultaneous camera requests
+    if (cameraActive) {
+        console.log('Camera already starting or active');
+        return;
+    }
+
+    cameraActive = true;
+
     try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // More robust constraints
+        const constraints = {
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            },
+            audio: false
+        };
+
+        // Stop existing stream if any
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+
+        // Request new stream with error handling
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        if (!videoStream || !videoStream.getVideoTracks().length) {
+            throw new Error('No video stream obtained');
+        }
+
+        // Set the stream to the video element
         webcamEl.srcObject = videoStream;
-        webcamEl.parentElement.classList.add('active');
-        overlayEl.style.display = 'none';
-        webcamEl.style.display = 'block';
-        buttonsEl.innerHTML = `<button type="button" id="capture-btn" class="main-btn">Capture Face</button>`;
-        document.getElementById('capture-btn').addEventListener('click', () => captureFace(webcamEl, buttonsEl));
+        webcamEl.muted = true;
+
+        // Handle video metadata
+        const playPromise = webcamEl.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                // Video is playing
+                webcamEl.parentElement.classList.add('active');
+                overlayEl.style.display = 'none';
+                webcamEl.style.display = 'block';
+                buttonsEl.innerHTML = `<button type="button" id="capture-btn" class="main-btn">Capture Face</button>`;
+                
+                const captureBtn = document.getElementById('capture-btn');
+                if (captureBtn) {
+                    captureBtn.addEventListener('click', () => captureFace(webcamEl, buttonsEl));
+                }
+                
+                cameraActive = false;
+            }).catch(err => {
+                console.error('Play promise rejected:', err);
+                cameraActive = false;
+                stopCamera();
+                alert("Could not start video playback. Please try again.");
+            });
+        }
+
     } catch (err) {
-        alert("Could not access camera. Please check permissions.");
+        cameraActive = false;
+        
+        console.error('Camera error:', err);
+
+        // Specific error handling
+        if (err.name === 'NotAllowedError') {
+            alert("Camera permission denied. Please allow camera access in your browser settings and try again.");
+        } else if (err.name === 'NotFoundError') {
+            alert("No camera found. Please check if your device has a camera.");
+        } else if (err.name === 'NotReadableError') {
+            alert("Camera is in use by another application. Please close other apps and try again.");
+        } else if (err.name === 'OverconstrainedError') {
+            // Try again with less specific constraints
+            console.log('Retrying with less specific constraints...');
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                
+                webcamEl.srcObject = videoStream;
+                webcamEl.muted = true;
+                
+                const playPromise = webcamEl.play();
+                playPromise.then(() => {
+                    webcamEl.parentElement.classList.add('active');
+                    overlayEl.style.display = 'none';
+                    webcamEl.style.display = 'block';
+                    buttonsEl.innerHTML = `<button type="button" id="capture-btn" class="main-btn">Capture Face</button>`;
+                    
+                    const captureBtn = document.getElementById('capture-btn');
+                    if (captureBtn) {
+                        captureBtn.addEventListener('click', () => captureFace(webcamEl, buttonsEl));
+                    }
+                }).catch(err2 => {
+                    console.error('Fallback play failed:', err2);
+                    stopCamera();
+                    alert("Could not start video. Please refresh and try again.");
+                });
+            } catch (fallbackErr) {
+                console.error('Fallback failed:', fallbackErr);
+                alert("Camera access failed. Please refresh the page and try again.");
+            }
+        } else {
+            alert(`Camera error: ${err.message}`);
+        }
     }
 }
 
 function stopCamera() {
     if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
+        videoStream.getTracks().forEach(track => {
+            track.stop();
+        });
+        videoStream = null;
     }
+    cameraActive = false;
 }
 
 function captureFace(webcamEl, buttonsEl) {
-    const canvas = document.createElement('canvas');
-    canvas.width = webcamEl.videoWidth;
-    canvas.height = webcamEl.videoHeight;
-    const context = canvas.getContext('2d');
-    context.drawImage(webcamEl, 0, 0, canvas.width, canvas.height);
-    faceIdImageUrl = canvas.toDataURL('image/jpeg');
-    
-    stopCamera();
-    
-    webcamEl.style.display = 'none';
-    const preview = document.createElement('img');
-    preview.src = faceIdImageUrl;
-    preview.className = 'face-preview';
-    webcamEl.parentElement.querySelector('.face-preview')?.remove();
-    webcamEl.parentElement.appendChild(preview);
+    if (!webcamEl.srcObject) {
+        alert("Camera not ready. Please try again.");
+        return;
+    }
 
-    buttonsEl.innerHTML = `<button type="button" id="retake-btn" class="secondary-btn">Retake</button>`;
-    document.getElementById('retake-btn').addEventListener('click', () => {
-        preview.remove();
-        faceIdImageUrl = null;
-        startCamera(webcamEl, webcamEl.parentElement.querySelector('.camera-overlay'), buttonsEl);
-    });
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = webcamEl.videoWidth;
+        canvas.height = webcamEl.videoHeight;
+
+        if (canvas.width === 0 || canvas.height === 0) {
+            alert("Video not ready. Please wait a moment and try again.");
+            return;
+        }
+
+        const context = canvas.getContext('2d');
+        context.drawImage(webcamEl, 0, 0, canvas.width, canvas.height);
+        faceIdImageUrl = canvas.toDataURL('image/jpeg');
+        
+        stopCamera();
+        
+        webcamEl.style.display = 'none';
+        const preview = document.createElement('img');
+        preview.src = faceIdImageUrl;
+        preview.className = 'face-preview';
+        webcamEl.parentElement.querySelector('.face-preview')?.remove();
+        webcamEl.parentElement.appendChild(preview);
+
+        buttonsEl.innerHTML = `<button type="button" id="retake-btn" class="secondary-btn">Retake</button>`;
+        document.getElementById('retake-btn').addEventListener('click', () => {
+            preview.remove();
+            faceIdImageUrl = null;
+            startCamera(webcamEl, webcamEl.parentElement.querySelector('.camera-overlay'), buttonsEl);
+        });
+    } catch (err) {
+        console.error('Error capturing face:', err);
+        alert("Failed to capture image. Please try again.");
+    }
 }
 
 async function renderModuleCheckboxes(container, allModules, selectedModuleCodes = []) {
@@ -260,7 +376,6 @@ async function initAddStudentPage() {
     }
 
     function showValidationMessage(message, type = 'error') {
-        // Remove any existing validation message
         const existingMsg = studentNumberInput.parentElement.querySelector('.validation-message');
         if (existingMsg) existingMsg.remove();
 
@@ -279,7 +394,6 @@ async function initAddStudentPage() {
     }
 
     async function validateStudentNumber(studentNumber) {
-        // Clear existing validation styling
         studentNumberInput.style.borderColor = '';
         showValidationMessage('');
         
@@ -297,7 +411,6 @@ async function initAddStudentPage() {
             return;
         }
 
-        // Show loading state
         showValidationMessage('Checking availability...', 'info');
         
         const exists = await checkStudentExists(studentNumber);
@@ -311,7 +424,6 @@ async function initAddStudentPage() {
             showValidationMessage('Student number is available', 'success');
             isStudentNumberValid = true;
         } else {
-            // Error occurred during check
             studentNumberInput.style.borderColor = '#ffa500';
             showValidationMessage('Unable to verify student number. Please try again.');
             isStudentNumberValid = false;
@@ -320,22 +432,18 @@ async function initAddStudentPage() {
         updateSubmitButton();
     }
 
-    // Add event listener for real-time validation
     studentNumberInput.addEventListener('input', (e) => {
         const value = e.target.value;
         
-        // Clear previous timeout
         if (validationTimeout) {
             clearTimeout(validationTimeout);
         }
         
-        // Debounce the validation to avoid too many API calls
         validationTimeout = setTimeout(() => {
             validateStudentNumber(value);
-        }, 500); // Wait 500ms after user stops typing
+        }, 500);
     });
 
-    // Initial state - disable submit button
     updateSubmitButton();
 
     form.addEventListener('submit', async (e) => {
@@ -346,7 +454,6 @@ async function initAddStudentPage() {
         const studentSurname = document.getElementById('student-surname').value;
         const selectedModules = Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value);
 
-        // Final validation before submission
         if (!isStudentNumberValid) {
             showStatusMessage('Please enter a valid and available student number.', 'error');
             return;
@@ -375,9 +482,7 @@ async function initAddStudentPage() {
             }
         }
 
-        // Disable submit button during processing
         submitBtn.disabled = true;
-        // Add spinner
         const originalBtnText = submitBtn.textContent;
         submitBtn.innerHTML = '<span class="button-spinner"></span>Adding Student...';
 
@@ -401,7 +506,6 @@ async function initAddStudentPage() {
                 return;
             }
 
-            // If face ID image is provided, register it
             if (faceIdImageUrl) {
                 const faceResponse = await registerFace(studentNumber, faceIdImageUrl);
                 if (!faceResponse.ok) {
@@ -423,7 +527,6 @@ async function initAddStudentPage() {
             console.error('Error adding student:', error);
             showStatusMessage('An unexpected error occurred. Please try again.', 'error');
         } finally {
-            // Re-enable submit button
             submitBtn.disabled = !isStudentNumberValid;
             submitBtn.innerHTML = originalBtnText;
         }
@@ -465,7 +568,7 @@ async function initEditStudentPage() {
     if (student.has_face_id && student.face_id_image_url) {
         overlayEl.style.display = 'none';
         const preview = document.createElement('img');
-        preview.src = `/${student.face_id_image_url}`; // Assumes the URL is relative
+        preview.src = `/${student.face_id_image_url}`;
         preview.className = 'face-preview';
         webcamEl.parentElement.appendChild(preview);
         buttonsEl.innerHTML = `<button type="button" id="retake-btn" class="secondary-btn">Retake Face ID</button>`;
@@ -479,7 +582,6 @@ async function initEditStudentPage() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // Add spinner to button
         submitBtn.disabled = true;
         const originalBtnText = submitBtn.textContent;
         submitBtn.innerHTML = '<span class="button-spinner"></span>Saving...';
@@ -490,13 +592,14 @@ async function initEditStudentPage() {
             modules: Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value)
         };
 
-        if (studentData.modules.length == 0) {
+        if (studentData.modules.length === 0) {
             alert('No modules selected!');
             window.location.href = `student_edit.html?number=${studentNumber}`;
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
             return;
         }
+
         const updateResponse = await fetch(`/api/students/${studentNumber}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -510,9 +613,9 @@ async function initEditStudentPage() {
             return;
         }
 
-        if (faceIdImageUrl) { // faceIdImageUrl is only set if a new face was captured
+        if (faceIdImageUrl) {
             const faceResponse = await registerFace(studentNumber, faceIdImageUrl);
-             if (!faceResponse.ok) {
+            if (!faceResponse.ok) {
                 const err = await faceResponse.json();
                 showStatusMessage(err.error || 'Details saved, but Face ID update failed.', 'error');
                 submitBtn.disabled = false;

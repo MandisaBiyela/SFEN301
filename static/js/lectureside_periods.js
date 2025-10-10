@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${period.isLongTermCancelled ? '<span class="status-tag permanent">PERMANENTLY CANCELLED</span>' : 
                         (period.isCancelled ? '<span class="status-tag weekly">CANCELLED THIS WEEK</span>' : '')}
                     `;
-                    card.addEventListener('click', () => handlePeriodClick(period));
+                    // card.addEventListener('click', () => handlePeriodClick(period));
                     periodsList.appendChild(card);
                 });
             }
