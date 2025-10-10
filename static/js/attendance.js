@@ -127,14 +127,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const relevantPeriodIds = allPeriods
             .filter(p =>
                 p.module_codes.includes(selectedModule) &&
-                p.period_start_time === startTime &&
-                p.period_end_time === endTime &&
-                p.day_of_week === selectedDayOfWeek
+                p.period_start_time == startTime &&
+                p.period_end_time == endTime &&
+                p.day_of_week == selectedDayOfWeek
             )
             .map(p => p.id);
 
         const periodAttendance = allAttendance.filter(record =>
-            record.date === selectedDate && relevantPeriodIds.includes(record.class_period_id)
+            record.date == selectedDate && relevantPeriodIds.includes(record.class_period_id)
         );
 
         const presentStudentsInPeriod = new Set(periodAttendance.map(r => r.user_id)).size;
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (filteredStudents.length > 0) {
             filteredStudents.sort((a,b) => a.surname.localeCompare(b.surname)).forEach(student => {
-                const isPresent = periodAttendance.some(r => r.user_id === student.student_number);
+                const isPresent = periodAttendance.some(r => r.user_id == student.student_number);
                 const statusImageSrc = isPresent ? presentImg : notPresentImg;
                 const statusAlt = isPresent ? 'Present' : 'Absent';
 
@@ -195,8 +195,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const studentId = event.target.dataset.studentId;
         const moduleId = event.target.dataset.moduleId;
 
-        const student = allStudents.find(s => s.student_number === studentId);
-        const module = allModules.find(m => m.code === moduleId);
+        const student = allStudents.find(s => s.student_number ==studentId);
+        const module = allModules.find(m => m.code == moduleId);
 
         if (!student || !module) {
             alert('Student or module not found');
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .map(p => p.id);
 
         const allModuleAttendance = allAttendance.filter(r => modulePeriodIds.includes(r.class_period_id));
-        const studentModuleAttendance = allModuleAttendance.filter(r => r.user_id === studentId);
+        const studentModuleAttendance = allModuleAttendance.filter(r => r.user_id == studentId);
         
         const totalAttendedPeriods = studentModuleAttendance.length;
 
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close modal handlers
     modalCloseBtn.addEventListener('click', () => studentStatsModal.style.display = 'none');
     window.addEventListener('click', event => {
-        if (event.target === studentStatsModal) studentStatsModal.style.display = 'none';
+        if (event.target == studentStatsModal) studentStatsModal.style.display = 'none';
     });
 
     // Print attendance report
